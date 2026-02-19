@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI SHORTS STUDIO PRO v6.0.1</title>
+<link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════ CSS RESET & VARIABLES ═══════ */
+:root {
+  --void:#010409; --deep:#0d1117; --card:#161b22; --card2:#1c2128;
+  --hover:#21262d; --border:#30363d; --brite:#484f58;
+  --cyan:#00d4ff; --purple:#7c3aed; --green:#3fb950;
+  --orange:#e3700a; --red:#f85149; --yellow:#d29922; --pink:#f778ba;
+  --text1:#e6edf3; --text2:#8b949e; --text3:#484f58;
+  --glow-cyan: 0 0 12px rgba(0,212,255,.3);
+  --glow-purple: 0 0 12px rgba(124,58,237,.3);
+  --radius: 10px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{height:100%;scroll-behavior:smooth}
+body{
+  background:var(--void);color:var(--text1);font-family:'Noto Sans KR',sans-serif;
+  height:100%;overflow:hidden;
+  background-image:
+    linear-gradient(rgba(0,212,255,.015) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,255,.015) 1px,transparent 1px);
+  background-size:44px 44px;
+}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--brite);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text2)}
+::selection{background:rgba(0,212,255,.2);color:#fff}
+
+/* ═══════ HEADER ═══════ */
+.hdr{
+  position:fixed;top:0;left:0;right:0;z-index:200;height:52px;
+  background:rgba(1,4,9,.95);border-bottom:1px solid var(--border);
+  backdrop-filter:blur(20px);padding:0 16px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.logo{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.logo-icon{
+  width:32px;height:32px;border-radius:8px;
+  background:linear-gradient(135deg,var(--cyan),var(--purple));
+  display:flex;align-items:center;justify-content:center;font-size:15px;
+  box-shadow:var(--glow-cyan);
+}
+.logo-name{
+  font-family:'Orbitron',monospace;font-weight:900;font-size:12px;letter-spacing:2px;
+  background:linear-gradient(135deg,var(--cyan),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.logo-ver{
+  font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;
+  border:1px solid var(--border);padding:2px 5px;border-radius:3px;
+}
+.hdr-center{display:flex;align-items:center;gap:8px}
+.nav-tab{
+  padding:4px 10px;border-radius:5px;border:1px solid transparent;
+  background:transparent;color:var(--text2);font-size:10.5px;cursor:pointer;
+  font-family:'Noto Sans KR',sans-serif;transition:all .2s;
+  display:flex;align-items:center;gap:4px;
+}
+.nav-tab:hover{color:var(--text1);background:var(--hover)}
+.nav-tab.active{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,.06)}
+.hdr-status{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.status-pill{display:flex;align-items:center;gap:5px;font-size:9.5px;font-family:'JetBrains Mono',monospace;color:var(--text2)}
+.dot{width:7px;height:7px;border-radius:50%;animation:blink 2s ease-in-out infinite}
+.dot.ok{background:var(--green);box-shadow:0 0 5px var(--green)}
+.dot.warn{background:var(--yellow);box-shadow:0 0 5px var(--yellow)}
+.dot.err{background:var(--red);box-shadow:0 0 5px var(--red)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ═══════ LAYOUT ═══════ */
+.layout{display:grid;grid-template-columns:260px 1fr 280px;height:calc(100vh - 52px);margin-top:52px}
+.left-panel,.center-panel,.right-panel{overflow-y:auto;overflow-x:hidden;height:100%}
+.left-panel{border-right:1px solid var(--border);padding:10px;display:flex;flex-direction:column;gap:8px}
+.center-panel{padding:12px;display:flex;flex-direction:column;gap:10px}
+.right-panel{border-left:1px solid var(--border);padding:10px;display:flex;flex-direction:column;gap:8px}
+
+/* ═══════ TAB CONTENT ═══════ */
+.tab-content{display:none;flex-direction:column;gap:10px;flex:1;min-height:0}
+.tab-content.active{display:flex}
+
+/* ═══════ CARD ═══════ */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .2s;flex-shrink:0}
+.card:hover{border-color:var(--brite)}
+.card-hd{
+  padding:7px 11px;background:var(--card2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.card-title{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text2);display:flex;align-items:center;gap:5px}
+.card-bd{padding:9px 11px}
+.card.accent{border-color:rgba(0,212,255,.2)}
+.card.accent .card-hd{background:rgba(0,212,255,.04)}
+
+/* ═══════ BADGES ═══════ */
+.badge{font-size:9px;font-family:'JetBrains Mono',monospace;padding:1px 6px;border-radius:9px;border:1px solid}
+.b-cyan{color:var(--cyan);border-color:rgba(0,212,255,.3);background:rgba(0,212,255,.07)}
+.b-green{color:var(--green);border-color:rgba(63,185,80,.3);background:rgba(63,185,80,.07)}
+.b-red{color:var(--red);border-color:rgba(248,81,73,.3);background:rgba(248,81,73,.07)}
+.b-purple{color:#a78bfa;border-color:rgba(124,58,237,.3);background:rgba(124,58,237,.07)}
+.b-yellow{color:var(--yellow);border-color:rgba(210,153,34,.3);background:rgba(210,153,34,.07)}
+.b-pink{color:var(--pink);border-color:rgba(247,120,186,.3);background:rgba(247,120,186,.07)}
+
+/* ═══════ METRICS ═══════ */
+.metric{margin-bottom:7px}
+.metric-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.mlabel{font-size:9.5px;color:var(--text2);font-family:'JetBrains Mono',monospace}
+.mval{font-size:9.5px;font-family:'JetBrains Mono',monospace;font-weight:600}
+.mval.ok{color:var(--green)}.mval.warn{color:var(--yellow)}.mval.hot{color:var(--red)}
+.bar-bg{height:3px;background:var(--void);border-radius:2px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;transition:width .8s ease}
+.fc{background:linear-gradient(90deg,var(--cyan),rgba(0,212,255,.5))}
+.fp{background:linear-gradient(90deg,var(--purple),rgba(124,58,237,.5))}
+.fg{background:linear-gradient(90deg,var(--green),rgba(63,185,80,.5))}
+.fo{background:linear-gradient(90deg,var(--orange),rgba(227,112,10,.5))}
+
+/* ═══════ GPU CARD ═══════ */
+.gpu-card .gpu-name{font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.gpu-card .gpu-detail{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.6}
+
+/* ═══════ LOG ═══════ */
+.log-con{
+  background:var(--void);border:1px solid var(--border);border-radius:6px;
+  padding:5px 7px;max-height:110px;overflow-y:auto;
+  font-family:'JetBrains Mono',monospace;font-size:9px;line-height:1.7;
+}
+.ll{display:flex;gap:5px}
+.lt{color:var(--text3);flex-shrink:0}
+.lm.info{color:var(--cyan)}.lm.ok{color:var(--green)}.lm.warn{color:var(--yellow)}.lm.err{color:var(--red)}
+
+/* ═══════ TOPIC ═══════ */
+.topic-item{
+  display:flex;align-items:center;gap:7px;padding:7px 9px;
+  border:1px solid var(--border);border-radius:7px;margin-bottom:4px;
+  cursor:pointer;transition:all .2s;background:var(--void);
+}
+.topic-item:hover{border-color:var(--brite);background:var(--card2)}
+.topic-item.sel{border-color:var(--cyan);background:rgba(0,212,255,.04)}
+.t-num{
+  width:20px;height:20px;border-radius:50%;border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:8px;font-family:'Orbitron',monospace;font-weight:700;
+  color:var(--text2);flex-shrink:0;transition:all .2s;
+}
+.topic-item.sel .t-num{background:var(--cyan);color:#000;border-color:var(--cyan)}
+.t-info{flex:1;min-width:0}
+.t-title{font-size:11px;font-weight:500;color:var(--text1);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.t-meta{display:flex;gap:4px;flex-wrap:wrap}
+.t-tag{font-size:8.5px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+
+/* ═══════ INPUT ═══════ */
+.input-row{display:flex;gap:5px;margin-top:6px}
+.inp{
+  flex:1;background:var(--void);border:1px solid var(--border);border-radius:6px;
+  padding:7px 9px;color:var(--text1);font-size:11px;
+  font-family:'Noto Sans KR',sans-serif;outline:none;transition:border-color .2s;
+}
+.inp:focus{border-color:var(--cyan)}
+.inp::placeholder{color:var(--text3)}
+.tags-wrap{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.tag{
+  display:inline-flex;align-items:center;gap:3px;
+  background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.25);
+  color:var(--cyan);font-size:9.5px;padding:2px 7px;border-radius:20px;
+  font-family:'JetBrains Mono',monospace;
+}
+.tag-rm{cursor:pointer;opacity:.6;transition:opacity .2s;font-size:10px}
+.tag-rm:hover{opacity:1;color:var(--red)}
+
+/* ═══════ BUTTONS ═══════ */
+.btn{
+  padding:5px 10px;border-radius:6px;border:1px solid var(--border);
+  background:var(--card2);color:var(--text2);font-size:10.5px;
+  font-family:'Noto Sans KR',sans-serif;cursor:pointer;transition:all .2s;
+  display:inline-flex;align-items:center;gap:4px;white-space:nowrap;
+}
+.btn:hover{border-color:var(--brite);color:var(--text1);background:var(--hover)}
+.btn.sm{padding:3px 7px;font-size:9.5px}
+.btn.full{width:100%;justify-content:center}
+.btn.primary{background:linear-gradient(135deg,var(--cyan),#0095cc);border-color:var(--cyan);color:#000;font-weight:700}
+.btn.primary:hover{box-shadow:var(--glow-cyan)}
+.btn.success{background:rgba(63,185,80,.1);border-color:rgba(63,185,80,.35);color:var(--green)}
+.btn.danger{background:rgba(248,81,73,.08);border-color:rgba(248,81,73,.3);color:var(--red)}
+.btn.purple{background:rgba(124,58,237,.1);border-color:rgba(124,58,237,.35);color:#a78bfa}
+.btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+
+.btn-gen{
+  width:100%;padding:12px;border-radius:9px;border:none;
+  background:linear-gradient(135deg,var(--purple),var(--cyan));color:#fff;
+  font-size:13px;font-weight:700;font-family:'Noto Sans KR',sans-serif;
+  cursor:pointer;transition:all .3s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 4px 20px rgba(124,58,237,.4);
+}
+.btn-gen:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(124,58,237,.6)}
+.btn-gen:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* ═══════ SETTINGS ═══════ */
+.s-label{font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;font-family:'JetBrains Mono',monospace}
+.s-select{
+  width:100%;background:var(--void);border:1px solid var(--border);border-radius:6px;
+  padding:6px 8px;color:var(--text1);font-size:10.5px;
+  font-family:'Noto Sans KR',sans-serif;outline:none;cursor:pointer;transition:border-color .2s;
+}
+.s-select:focus{border-color:var(--cyan)}
+.s-group{margin-bottom:8px}
+
+.preset-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px}
+.preset-chip{
+  padding:5px 3px;border:1px solid var(--border);border-radius:5px;
+  background:var(--void);color:var(--text2);font-size:9px;
+  text-align:center;cursor:pointer;transition:all .2s;
+  font-family:'JetBrains Mono',monospace;
+}
+.preset-chip.active{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,.07)}
+.preset-chip:hover:not(.active){border-color:var(--brite)}
+
+/* ═══════ URL ANALYSIS ═══════ */
+.url-input-group{display:flex;gap:5px}
+.url-input-group .inp{flex:1;font-size:10.5px}
+.url-meta{
+  background:var(--void);border:1px solid var(--border);border-radius:7px;
+  padding:9px;margin-top:8px;
+}
+.url-meta-title{font-size:12px;font-weight:700;color:var(--text1);margin-bottom:5px;line-height:1.4}
+.url-meta-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.url-meta-tag{font-size:9px;padding:2px 6px;border-radius:4px;background:var(--card2);color:var(--text2);font-family:'JetBrains Mono',monospace}
+.url-thumb{width:100%;border-radius:6px;margin-top:6px;border:1px solid var(--border);max-height:150px;object-fit:cover}
+.style-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px}
+.style-chip{
+  padding:7px 6px;border:1px solid var(--border);border-radius:6px;
+  background:var(--void);cursor:pointer;transition:all .2s;text-align:center;
+}
+.style-chip:hover{border-color:var(--brite);background:var(--card2)}
+.style-chip.active{border-color:var(--purple);background:rgba(124,58,237,.08)}
+.style-chip .sc-name{font-size:10px;font-weight:600;color:var(--text1)}
+.style-chip .sc-desc{font-size:8.5px;color:var(--text3);margin-top:2px}
+
+/* ═══════ PIPELINE ═══════ */
+.big-bar-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.big-bar-label{font-size:11px;font-weight:600;color:var(--text1)}
+.big-bar-pct{font-size:18px;font-weight:700;font-family:'Orbitron',monospace;color:var(--cyan)}
+.big-bar-bg{height:7px;background:var(--void);border-radius:5px;overflow:hidden;border:1px solid var(--border);margin-bottom:8px}
+.big-bar-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--cyan));border-radius:5px;transition:width .5s ease}
+
+.steps{display:flex;gap:0;margin-bottom:10px}
+.step{flex:1;text-align:center;position:relative}
+.step::before{content:'';position:absolute;top:10px;left:50%;right:-50%;height:2px;background:var(--border);z-index:0}
+.step:last-child::before{display:none}
+.step-c{
+  width:20px;height:20px;border-radius:50%;background:var(--void);
+  border:2px solid var(--border);display:flex;align-items:center;justify-content:center;
+  font-size:7px;margin:0 auto 2px;position:relative;z-index:1;transition:all .3s;
+}
+.step.done .step-c{background:var(--green);border-color:var(--green);color:#000}
+.step.done::before{background:var(--green)}
+.step.active .step-c{background:rgba(0,212,255,.15);border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 10px rgba(0,212,255,.4)}
+.step-lbl{font-size:7.5px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.step.done .step-lbl{color:var(--green)}.step.active .step-lbl{color:var(--cyan)}
+
+.details-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.dbox{background:var(--void);border:1px solid var(--border);border-radius:6px;padding:5px;text-align:center}
+.dbox .dk{font-size:7.5px;color:var(--text3);text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:1px}
+.dbox .dv{font-size:12px;font-weight:700;font-family:'Orbitron',monospace;color:var(--cyan)}
+
+/* ═══════ STATS ═══════ */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;flex-shrink:0}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px;text-align:center}
+.stat-icon{font-size:14px;margin-bottom:3px}
+.stat-val{font-size:14px;font-weight:700;font-family:'Orbitron',monospace;color:var(--cyan)}
+.stat-lbl{font-size:8px;color:var(--text3);text-transform:uppercase;font-family:'JetBrains Mono',monospace}
+
+/* ═══════ RESULTS ═══════ */
+.results-list{max-height:none;overflow:visible}
+.ritem{border-bottom:1px solid var(--border);padding:9px 11px;transition:background .2s}
+.ritem:hover{background:var(--card2)}
+.ritem:last-child{border-bottom:none}
+.rrow1{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.r-icon{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0}
+.r-icon.done{background:rgba(63,185,80,.12);color:var(--green)}
+.r-icon.running{background:rgba(0,212,255,.12);color:var(--cyan)}
+.r-icon.pending{background:rgba(139,148,158,.1);color:var(--text2)}
+.r-icon.failed{background:rgba(248,81,73,.1);color:var(--red)}
+.r-title{flex:1;font-size:10.5px;font-weight:600;color:var(--text1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r-time{font-size:8.5px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.r-pbar{height:2px;background:var(--void);border-radius:1px;margin-bottom:4px;overflow:hidden}
+.r-pfill{height:100%;background:linear-gradient(90deg,var(--purple),var(--cyan));transition:width .5s}
+.rrow2{display:flex;align-items:center;gap:3px;flex-wrap:wrap}
+.rtag{font-size:8.5px;font-family:'JetBrains Mono',monospace;color:var(--text3);background:var(--void);border:1px solid var(--border);border-radius:3px;padding:1px 4px}
+.rmodel{font-size:8.5px;font-family:'JetBrains Mono',monospace;color:#a78bfa;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.25);border-radius:3px;padding:1px 4px}
+
+/* ═══════ EDITOR ═══════ */
+.editor-card{display:none;flex-shrink:0}
+.editor-card.show{display:block}
+.editor-ta{
+  width:100%;min-height:90px;background:var(--void);border:1px solid var(--border);
+  border-radius:6px;padding:9px;color:var(--text1);font-size:11.5px;
+  font-family:'Noto Sans KR',sans-serif;line-height:1.7;resize:vertical;outline:none;
+}
+.editor-ta:focus{border-color:var(--cyan)}
+.word-count{font-size:8.5px;color:var(--text3);font-family:'JetBrains Mono',monospace;text-align:right;margin-top:2px}
+
+/* ═══════ MODE TABS ═══════ */
+.mode-tabs{display:flex;gap:3px;margin-bottom:7px}
+.mode-tab{
+  flex:1;padding:5px 4px;border:1px solid var(--border);border-radius:6px;
+  background:transparent;color:var(--text2);font-size:10.5px;
+  font-family:'Noto Sans KR',sans-serif;cursor:pointer;text-align:center;transition:all .2s;
+}
+.mode-tab.active{background:rgba(0,212,255,.08);border-color:var(--cyan);color:var(--cyan)}
+
+/* ═══════ MODAL ═══════ */
+.modal-ov{
+  position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);
+  z-index:1000;display:none;align-items:center;justify-content:center;
+}
+.modal-ov.open{display:flex}
+.modal{
+  background:var(--card);border:1px solid var(--brite);border-radius:14px;
+  width:92%;max-width:640px;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;
+}
+.modal-hd{
+  padding:11px 15px;background:var(--card2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+.modal-close{
+  width:24px;height:24px;background:var(--void);border:1px solid var(--border);
+  border-radius:5px;color:var(--text2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:12px;
+}
+.modal-close:hover{border-color:var(--red);color:var(--red)}
+.modal-bd{padding:14px;overflow-y:auto;flex:1}
+.preview-video{width:100%;max-height:50vh;border-radius:8px;border:1px solid var(--border);background:#000}
+
+/* ═══════ SPEC GRID ═══════ */
+.spec-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-top:5px}
+.spec-box{background:var(--void);border:1px solid var(--border);border-radius:5px;padding:4px 5px;text-align:center}
+.spec-box .sk{font-size:7.5px;color:var(--text3);text-transform:uppercase;font-family:'JetBrains Mono',monospace}
+.spec-box .sv{font-size:11px;font-weight:700;color:var(--cyan);font-family:'JetBrains Mono',monospace}
+
+/* ═══════ TOAST ═══════ */
+.toast-wrap{position:fixed;top:58px;right:14px;z-index:2000;display:flex;flex-direction:column;gap:6px}
+.toast{
+  background:var(--card);border:1px solid var(--border);border-radius:9px;
+  padding:9px 12px;min-width:220px;max-width:300px;
+  display:flex;align-items:flex-start;gap:7px;
+  box-shadow:0 8px 28px rgba(0,0,0,.55);animation:tIn .25s ease;
+}
+@keyframes tIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
+.toast.hiding{animation:tOut .25s ease forwards}
+@keyframes tOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(18px)}}
+.toast.success{border-left:3px solid var(--green)}
+.toast.error{border-left:3px solid var(--red)}
+.toast.info{border-left:3px solid var(--cyan)}
+.toast.warn{border-left:3px solid var(--yellow)}
+.t-ico{font-size:13px;flex-shrink:0}
+.t-cnt{flex:1}
+.t-title{font-size:10.5px;font-weight:700;color:var(--text1);margin-bottom:1px}
+.t-msg{font-size:9.5px;color:var(--text2);line-height:1.4}
+
+/* ═══════ UTILS ═══════ */
+.divider{height:1px;background:var(--border);margin:5px 0}
+.flex-row{display:flex;gap:4px;align-items:center}
+.flex-btw{display:flex;justify-content:space-between;align-items:center}
+.vtable{width:100%;border-collapse:collapse;font-size:9.5px;font-family:'JetBrains Mono',monospace}
+.vtable th{padding:3px 7px;background:var(--void);border:1px solid var(--border);color:var(--text3);text-align:left}
+.vtable td{padding:3px 7px;border:1px solid var(--border);color:var(--text2)}
+.v-ok{color:var(--green)}.v-err{color:var(--red)}
+.loading-spin{display:inline-block;animation:spin 1s linear infinite}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.tooltip{position:relative}
+.tooltip::after{
+  content:attr(data-tip);position:absolute;bottom:calc(100% + 5px);left:50%;
+  transform:translateX(-50%);background:var(--card2);color:var(--text1);
+  font-size:9px;padding:3px 8px;border-radius:4px;border:1px solid var(--border);
+  white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10;
+}
+.tooltip:hover::after{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- ═══════ HEADER ═══════ -->
+<header class="hdr">
+  <div class="logo">
+    <div class="logo-icon">🎬</div>
+    <div><div class="logo-name">AI SHORTS STUDIO</div></div>
+    <div class="logo-ver">PRO v6.0.1</div>
+  </div>
+
+  <div class="hdr-center">
+    <button class="nav-tab active" onclick="switchTab('create',this)">🎬 영상 생성</button>
+    <button class="nav-tab" onclick="switchTab('url',this)">🔗 URL 분석</button>
+    <button class="nav-tab" onclick="switchTab('results',this)">📋 결과</button>
+  </div>
+
+  <div class="hdr-status">
+    <div class="status-pill"><div class="dot warn" id="serverDot"></div><span id="serverTxt">연결중</span></div>
+    <div class="status-pill"><div class="dot warn" id="ollamaDot"></div><span id="ollamaTxt">Ollama</span></div>
+    <div class="status-pill" id="gpuPill" style="display:none"><div class="dot ok" id="gpuDot"></div><span id="gpuTxt">GPU</span></div>
+    <div style="font-size:9.5px;font-family:'JetBrains Mono',monospace;color:var(--text2)"><span id="clock">--:--:--</span></div>
+  </div>
+</header>
+
+<!-- ═══════ LAYOUT ═══════ -->
+<div class="layout">
+
+<!-- ===== LEFT PANEL ===== -->
+<aside class="left-panel">
+
+  <!-- System Monitor -->
+  <div class="card">
+    <div class="card-hd">
+      <div class="card-title">📊 시스템</div>
+      <span class="badge b-green">LIVE</span>
+    </div>
+    <div class="card-bd">
+      <div class="metric">
+        <div class="metric-row"><span class="mlabel">CPU</span><span class="mval ok" id="cpuVal">--%</span></div>
+        <div class="bar-bg"><div class="bar-fill fc" id="cpuBar" style="width:0%"></div></div>
+      </div>
+      <div class="metric">
+        <div class="metric-row"><span class="mlabel">RAM</span><span class="mval ok" id="ramVal">--</span></div>
+        <div class="bar-bg"><div class="bar-fill fg" id="ramBar" style="width:0%"></div></div>
+      </div>
+      <div class="metric">
+        <div class="metric-row"><span class="mlabel">DISK</span><span class="mval ok" id="diskVal">--</span></div>
+        <div class="bar-bg"><div class="bar-fill fo" id="diskBar" style="width:0%"></div></div>
+      </div>
+      <div class="spec-grid">
+        <div class="spec-box"><div class="sk">Cores</div><div class="sv" id="cpuCores">--</div></div>
+        <div class="spec-box"><div class="sk">Workers</div><div class="sv" id="activeWorkers">0</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GPU Card -->
+  <div class="card gpu-card">
+    <div class="card-hd">
+      <div class="card-title">🎮 GPU</div>
+      <span class="badge b-purple" id="gpuBadge">검색중</span>
+    </div>
+    <div class="card-bd">
+      <div class="gpu-name" id="gpuName">🔍 감지 중...</div>
+      <div class="metric" style="margin-top:5px">
+        <div class="metric-row"><span class="mlabel">VRAM</span><span class="mval ok" id="vramVal">--</span></div>
+        <div class="bar-bg"><div class="bar-fill fp" id="vramBar" style="width:0%"></div></div>
+      </div>
+      <div class="metric">
+        <div class="metric-row"><span class="mlabel">GPU Load</span><span class="mval ok" id="gpuUtil">--%</span></div>
+        <div class="bar-bg"><div class="bar-fill fc" id="gpuUtilBar" style="width:0%"></div></div>
+      </div>
+      <div class="gpu-detail" id="gpuDetail">
+        Driver: -- | CUDA: -- | Temp: --°C
+      </div>
+      <div class="spec-grid" style="margin-top:4px">
+        <div class="spec-box"><div class="sk">NVENC</div><div class="sv" id="nvencStatus" style="font-size:9px">--</div></div>
+        <div class="spec-box"><div class="sk">WSL2</div><div class="sv" id="wsl2Status" style="font-size:9px">--</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ollama LLM -->
+  <div class="card">
+    <div class="card-hd">
+      <div class="card-title">🤖 Ollama</div>
+      <span class="badge b-purple" id="ollamaModelBadge">--</span>
+    </div>
+    <div class="card-bd">
+      <div style="padding:5px 8px;border-radius:5px;border:1px solid;font-size:10px;display:flex;align-items:center;gap:5px;margin-bottom:6px;border-color:rgba(248,81,73,.3);background:rgba(248,81,73,.06);color:var(--red)" id="ollamaStatus">
+        <span id="ollamaStatusIcon">⏳</span>
+        <span id="ollamaStatusTxt">연결 확인 중...</span>
+      </div>
+      <div class="s-group">
+        <div class="s-label">활성 모델</div>
+        <select class="s-select" id="modelSelect" onchange="switchModel(this.value)">
+          <option value="">로딩 중...</option>
+        </select>
+      </div>
+      <button class="btn sm full" onclick="checkOllama()">🔄 상태 확인</button>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="card">
+    <div class="card-hd">
+      <div class="card-title">💬 로그</div>
+      <button class="btn sm" onclick="clearLog()">지우기</button>
+    </div>
+    <div style="padding:5px"><div class="log-con" id="logCon"></div></div>
+  </div>
+
+  <!-- Today Stats -->
+  <div class="card">
+    <div class="card-hd"><div class="card-title">⚡ 통계</div></div>
+    <div class="card-bd">
+      <div class="spec-grid">
+        <div class="spec-box"><div class="sk">완료</div><div class="sv" id="sDone" style="color:var(--green)">0</div></div>
+        <div class="spec-box"><div class="sk">진행</div><div class="sv" id="sRun" style="color:var(--cyan)">0</div></div>
+        <div class="spec-box"><div class="sk">대기</div><div class="sv" id="sPend" style="color:var(--yellow)">0</div></div>
+        <div class="spec-box"><div class="sk">실패</div><div class="sv" id="sFail" style="color:var(--red)">0</div></div>
+      </div>
+    </div>
+  </div>
+
+</aside>
+
+<!-- ===== CENTER PANEL ===== -->
+<main class="center-panel">
+
+  <!-- ─── TAB: CREATE ─── -->
+  <div class="tab-content active" id="tabCreate">
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-icon">🎬</div><div class="stat-val" id="totalVid">0</div><div class="stat-lbl">총 생성</div></div>
+      <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-val" id="todayVid">0</div><div class="stat-lbl">오늘</div></div>
+      <div class="stat-card"><div class="stat-icon">⚡</div><div class="stat-val" id="avgTime">--</div><div class="stat-lbl">평균</div></div>
+      <div class="stat-card"><div class="stat-icon">💾</div><div class="stat-val" id="storUsed">--</div><div class="stat-lbl">디스크</div></div>
+    </div>
+
+    <!-- Topic Selection -->
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-title">🔥 주제 선택 <span class="badge b-cyan" id="selCount" style="margin-left:4px">0개</span></div>
+        <div class="flex-row">
+          <button class="btn sm" onclick="refreshTrends()">🔄</button>
+          <button class="btn sm" onclick="selectAllTopics()">전체</button>
+          <button class="btn sm danger" onclick="clearTopics()">초기화</button>
+        </div>
+      </div>
+      <div class="card-bd">
+        <div class="mode-tabs">
+          <button class="mode-tab active" onclick="setMode('auto',this)">🤖 자동수집</button>
+          <button class="mode-tab" onclick="setMode('manual',this)">✏️ 직접입력</button>
+        </div>
+        <div id="modeAuto">
+          <div id="topicList"></div>
+          <div class="input-row">
+            <input class="inp" type="text" id="customIn" placeholder="추가 주제 입력 후 Enter..." onkeydown="if(event.key==='Enter')addCustom()">
+            <button class="btn primary sm" onclick="addCustom()">+ 추가</button>
+          </div>
+          <div class="tags-wrap" id="customTags"></div>
+        </div>
+        <div id="modeManual" style="display:none">
+          <p style="font-size:10.5px;color:var(--text2);margin-bottom:6px">주제를 직접 입력하세요 (최대 10개)</p>
+          <div id="manualList"></div>
+          <button class="btn full sm" onclick="addManual()" style="margin-top:5px">+ 주제 추가</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Script Editor -->
+    <div class="editor-card card" id="editorCard">
+      <div class="card-hd">
+        <div class="card-title" style="color:var(--cyan)">✍️ AI 시나리오 편집기</div>
+        <div class="flex-row">
+          <span class="badge b-purple" id="editorModelBadge">--</span>
+          <button class="btn sm danger" onclick="closeEditor()">✕</button>
+        </div>
+      </div>
+      <div class="card-bd">
+        <div style="font-size:9.5px;color:var(--text2);margin-bottom:5px" id="editorTopicBadge">주제명</div>
+        <textarea class="editor-ta" id="scriptTA" placeholder="AI 생성 시나리오..." oninput="updateWC()"></textarea>
+        <div class="word-count" id="wc">글자수: 0 | 예상: 0초</div>
+        <div class="flex-row" style="margin-top:6px;flex-wrap:wrap">
+          <button class="btn success" onclick="saveScript()">💾 저장</button>
+          <button class="btn" onclick="skipScript()">⏭ 건너뛰기</button>
+          <button class="btn purple" onclick="regenScript()">🤖 재생성</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pipeline -->
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-title">⚙️ 파이프라인</div>
+        <span class="badge b-cyan" id="pipeStatus">대기중</span>
+      </div>
+      <div class="card-bd">
+        <div class="big-bar-top">
+          <div class="big-bar-label" id="barLabel">주제를 선택하고 생성 버튼을 클릭하세요</div>
+          <div class="big-bar-pct" id="barPct">0%</div>
+        </div>
+        <div class="big-bar-bg"><div class="big-bar-fill" id="barFill" style="width:0%"></div></div>
+        <div class="steps" id="stepsRow">
+          <div class="step" data-s="0"><div class="step-c">📡</div><div class="step-lbl">수집</div></div>
+          <div class="step" data-s="1"><div class="step-c">🤖</div><div class="step-lbl">대본</div></div>
+          <div class="step" data-s="2"><div class="step-c">🔊</div><div class="step-lbl">TTS</div></div>
+          <div class="step" data-s="3"><div class="step-c">🎵</div><div class="step-lbl">BGM</div></div>
+          <div class="step" data-s="4"><div class="step-c">📝</div><div class="step-lbl">자막</div></div>
+          <div class="step" data-s="5"><div class="step-c">🎬</div><div class="step-lbl">렌더</div></div>
+          <div class="step" data-s="6"><div class="step-c">🔧</div><div class="step-lbl">후처리</div></div>
+          <div class="step" data-s="7"><div class="step-c">✅</div><div class="step-lbl">완료</div></div>
+        </div>
+        <div class="details-grid">
+          <div class="dbox"><div class="dk">현재</div><div class="dv" id="dTask" style="font-size:9px;font-family:'Noto Sans KR',sans-serif">대기</div></div>
+          <div class="dbox"><div class="dk">예상</div><div class="dv" id="dETA">--:--</div></div>
+          <div class="dbox"><div class="dk">인코더</div><div class="dv" id="dEncoder" style="font-size:9px">CPU</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─── TAB: URL ANALYSIS ─── -->
+  <div class="tab-content" id="tabUrl">
+
+    <div class="card accent">
+      <div class="card-hd">
+        <div class="card-title" style="color:var(--cyan)">🔗 URL 영상 분석</div>
+        <span class="badge b-pink">NEW</span>
+      </div>
+      <div class="card-bd">
+        <p style="font-size:10.5px;color:var(--text2);margin-bottom:8px;line-height:1.5">
+          YouTube 등 영상 URL을 입력하면 자동으로 분석하여<br>
+          시나리오를 재구성하고, 다양한 스타일로 재해석합니다.
+        </p>
+        <div class="url-input-group">
+          <input class="inp" type="url" id="urlInput" placeholder="https://www.youtube.com/watch?v=... 또는 영상 URL">
+          <button class="btn primary" id="urlAnalyzeBtn" onclick="analyzeUrl()">🔍 분석</button>
+        </div>
+        <div id="urlResult" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- URL Pipeline / Results shown here after analysis -->
+    <div class="card" id="urlPipeline" style="display:none">
+      <div class="card-hd">
+        <div class="card-title">⚙️ URL 영상 생성 파이프라인</div>
+        <span class="badge b-cyan" id="urlPipeStatus">대기중</span>
+      </div>
+      <div class="card-bd">
+        <div class="big-bar-top">
+          <div class="big-bar-label" id="urlBarLabel">스타일을 선택하고 생성하세요</div>
+          <div class="big-bar-pct" id="urlBarPct">0%</div>
+        </div>
+        <div class="big-bar-bg"><div class="big-bar-fill" id="urlBarFill" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TAB: RESULTS ─── -->
+  <div class="tab-content" id="tabResults">
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-title">📋 전체 생성 결과</div>
+        <div class="flex-row">
+          <span class="badge b-cyan" id="rCount">0건</span>
+          <button class="btn sm" onclick="loadJobs()">🔄</button>
+        </div>
+      </div>
+      <div class="results-list" id="rList">
+        <div style="padding:20px;text-align:center;color:var(--text3);font-size:11px">
+          <div style="font-size:28px;margin-bottom:6px">🎬</div>생성된 영상이 여기 표시됩니다
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ===== RIGHT PANEL ===== -->
+<aside class="right-panel">
+
+  <button class="btn-gen" id="genBtn" onclick="startGeneration()">
+    <span id="genIcon">🚀</span>
+    <span id="genTxt">영상 생성 시작</span>
+  </button>
+
+  <!-- Quality -->
+  <div class="card">
+    <div class="card-hd">
+      <div class="card-title">🎥 화질</div>
+      <span class="badge b-cyan" id="presetBadge">HD HIGH</span>
+    </div>
+    <div class="card-bd">
+      <div class="s-group">
+        <div class="s-label">프리셋</div>
+        <div class="preset-grid">
+          <div class="preset-chip" onclick="setPre(this,'4k_ultra','libx264',2160,3840,60,16)">4K<br><span style="color:var(--text3);font-size:7px">Ultra</span></div>
+          <div class="preset-chip active" onclick="setPre(this,'hd_high','libx264',1080,1920,30,18)">HD+<br><span style="color:var(--text3);font-size:7px">1080p</span></div>
+          <div class="preset-chip" onclick="setPre(this,'hd_standard','libx264',1080,1920,30,23)">HD<br><span style="color:var(--text3);font-size:7px">표준</span></div>
+          <div class="preset-chip" onclick="setPre(this,'yt_shorts','libx264',1080,1920,30,23)">YT<br><span style="color:var(--text3);font-size:7px">Shorts</span></div>
+          <div class="preset-chip" onclick="setPre(this,'tiktok','libx264',1080,1920,30,22)">TT<br><span style="color:var(--text3);font-size:7px">TikTok</span></div>
+          <div class="preset-chip" onclick="setPre(this,'fast_draft','libx264',720,1280,24,28)">Fast<br><span style="color:var(--text3);font-size:7px">720p</span></div>
+        </div>
+      </div>
+      <div class="s-group" style="margin-bottom:0">
+        <div class="s-label">품질 (CRF) <span id="crfV" style="color:var(--cyan)">18</span></div>
+        <input type="range" id="crfRange" min="14" max="28" value="18" style="width:100%;accent-color:var(--cyan)" oninput="document.getElementById('crfV').textContent=this.value">
+        <div class="flex-btw" style="font-size:8px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:1px">
+          <span>최고 14</span><span>표준 28</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio -->
+  <div class="card">
+    <div class="card-hd"><div class="card-title">🔊 오디오</div></div>
+    <div class="card-bd">
+      <div class="s-group">
+        <div class="s-label">TTS 음성</div>
+        <select class="s-select" id="voiceSel">
+          <option value="ko-KR-SunHiNeural">🇰🇷 선희 (여성)</option>
+          <option value="ko-KR-InJoonNeural">🇰🇷 인준 (남성)</option>
+          <option value="ko-KR-HyunsuNeural">🇰🇷 현수 (남성)</option>
+          <option value="ko-KR-YuJinNeural">🇰🇷 유진 (여성)</option>
+          <option value="ko-KR-BongJinNeural">🇰🇷 봉진 (남성)</option>
+          <option value="en-US-JennyNeural">🇺🇸 Jenny</option>
+          <option value="en-US-GuyNeural">🇺🇸 Guy</option>
+          <option value="ja-JP-NanamiNeural">🇯🇵 Nanami</option>
+          <option value="zh-CN-XiaoxiaoNeural">🇨🇳 Xiaoxiao</option>
+        </select>
+      </div>
+      <div class="s-group">
+        <div class="s-label">음성 속도</div>
+        <select class="s-select" id="ttsSpeed">
+          <option value="very_slow">🐢 매우 느림</option>
+          <option value="slow">🚶 느림</option>
+          <option value="normal" selected>🏃 보통</option>
+          <option value="fast">⚡ 빠름</option>
+          <option value="very_fast">🚀 매우 빠름</option>
+        </select>
+      </div>
+      <div class="s-group" style="margin-bottom:0">
+        <div class="s-label">배경 음악</div>
+        <select class="s-select" id="bgmSel">
+          <option value="none">🚫 BGM 없음</option>
+          <option value="cinematic">🎭 시네마틱</option>
+          <option value="upbeat">⚡ 업비트</option>
+          <option value="chill">😌 칠 아웃</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Performance -->
+  <div class="card">
+    <div class="card-hd"><div class="card-title">⚡ 성능</div></div>
+    <div class="card-bd">
+      <div class="s-group" style="margin-bottom:0">
+        <div class="s-label">인코더</div>
+        <select class="s-select" id="encoderSel">
+          <option value="auto">🔄 자동 (GPU 우선)</option>
+          <option value="gpu">🎮 GPU (NVENC)</option>
+          <option value="cpu">💻 CPU (libx264)</option>
+        </select>
+        <div style="font-size:8.5px;color:var(--text3);margin-top:3px;font-family:'JetBrains Mono',monospace" id="encoderHint">
+          GPU 감지 중...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Background Style -->
+  <div class="card">
+    <div class="card-hd"><div class="card-title">🎨 배경</div></div>
+    <div class="card-bd">
+      <div class="preset-grid">
+        <div class="preset-chip active" onclick="setBg(this,'gradient')">그라데이션</div>
+        <div class="preset-chip" onclick="setBg(this,'warm')">웜톤</div>
+        <div class="preset-chip" onclick="setBg(this,'cool')">쿨톤</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info -->
+  <div class="card">
+    <div class="card-hd"><div class="card-title">📦 정보</div></div>
+    <div class="card-bd">
+      <button class="btn full sm" onclick="openModal('versionModal')" style="margin-bottom:4px">📦 버전 정보</button>
+      <button class="btn full sm" onclick="openModal('helpModal')">❓ 도움말</button>
+    </div>
+  </div>
+
+</aside>
+</div>
+
+<!-- ═══════ TOAST ═══════ -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- ═══════ MODALS ═══════ -->
+<div class="modal-ov" id="helpModal">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title">❓ 사용 가이드</div><button class="modal-close" onclick="closeModal('helpModal')">✕</button></div>
+    <div class="modal-bd">
+      <div style="margin-bottom:12px">
+        <h3 style="font-size:11px;color:var(--cyan);margin-bottom:6px">🚀 빠른 시작</h3>
+        <ol style="font-size:10.5px;color:var(--text2);line-height:1.8;padding-left:16px">
+          <li>왼쪽 패널에서 시스템 상태와 GPU 정보를 확인합니다</li>
+          <li><strong>영상 생성</strong> 탭에서 트렌드 주제를 선택하거나 직접 입력합니다</li>
+          <li><strong>URL 분석</strong> 탭에서 기존 영상 URL을 분석하여 재해석할 수 있습니다</li>
+          <li>오른쪽에서 화질/음성/BGM/인코더를 설정합니다</li>
+          <li>🚀 영상 생성 시작 버튼을 클릭합니다</li>
+          <li>결과 탭에서 영상을 미리보기/다운로드합니다</li>
+        </ol>
+      </div>
+      <div style="margin-bottom:12px">
+        <h3 style="font-size:11px;color:var(--cyan);margin-bottom:6px">🔗 URL 분석 기능</h3>
+        <ol style="font-size:10.5px;color:var(--text2);line-height:1.8;padding-left:16px">
+          <li>YouTube 등 영상 URL을 입력하고 분석 버튼 클릭</li>
+          <li>영상 메타데이터(제목, 설명, 자막) 자동 추출</li>
+          <li>6가지 재해석 스타일 중 선택 (확장, 압축, 유머, 뉴스, 스토리, 토론)</li>
+          <li>AI가 원본을 기반으로 새로운 시나리오를 생성합니다</li>
+        </ol>
+      </div>
+      <div style="margin-bottom:12px">
+        <h3 style="font-size:11px;color:var(--cyan);margin-bottom:6px">🎮 GPU 가속</h3>
+        <ul style="font-size:10.5px;color:var(--text2);line-height:1.8;padding-left:16px">
+          <li>NVIDIA GPU 자동 감지 (WSL2 지원)</li>
+          <li>NVENC 하드웨어 인코딩으로 2~5배 빠른 렌더링</li>
+          <li>GPU 미감지 시 CPU 멀티스레드 자동 전환</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="font-size:11px;color:var(--cyan);margin-bottom:6px">🛠 WSL2 설치</h3>
+        <div style="background:var(--void);border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--green);line-height:1.8">
+          cd ai-shorts-studio<br>
+          chmod +x install.sh<br>
+          ./install.sh
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="versionModal">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title">📦 버전 정보</div><button class="modal-close" onclick="closeModal('versionModal')">✕</button></div>
+    <div class="modal-bd">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+        <div style="background:var(--void);border:1px solid var(--border);border-radius:6px;padding:7px;text-align:center">
+          <div style="font-size:8px;color:var(--text3);margin-bottom:2px">APP</div>
+          <div style="font-size:13px;font-weight:700;color:var(--cyan);font-family:'Orbitron',monospace">v6.0</div>
+        </div>
+        <div style="background:var(--void);border:1px solid var(--border);border-radius:6px;padding:7px;text-align:center">
+          <div style="font-size:8px;color:var(--text3);margin-bottom:2px">ENGINE</div>
+          <div style="font-size:13px;font-weight:700;color:var(--green);font-family:'Orbitron',monospace">FFmpeg</div>
+        </div>
+        <div style="background:var(--void);border:1px solid var(--border);border-radius:6px;padding:7px;text-align:center">
+          <div style="font-size:8px;color:var(--text3);margin-bottom:2px">GPU</div>
+          <div style="font-size:10px;font-weight:700;color:var(--purple);font-family:'JetBrains Mono',monospace" id="verGpuName">--</div>
+        </div>
+      </div>
+      <h4 style="font-size:9px;color:var(--text3);margin-bottom:4px;text-transform:uppercase">GPU 상세</h4>
+      <table class="vtable" id="gpuTable" style="margin-bottom:8px">
+        <tbody><tr><td colspan="2" style="text-align:center;color:var(--text3)">로딩 중...</td></tr></tbody>
+      </table>
+      <h4 style="font-size:9px;color:var(--text3);margin-bottom:4px;text-transform:uppercase">Ollama 모델</h4>
+      <table class="vtable" id="modelTable" style="margin-bottom:8px">
+        <thead><tr><th>모델명</th><th>크기</th></tr></thead>
+        <tbody><tr><td colspan="2" style="text-align:center;color:var(--text3)">로딩 중...</td></tr></tbody>
+      </table>
+      <h4 style="font-size:9px;color:var(--text3);margin-bottom:4px;text-transform:uppercase">패키지</h4>
+      <table class="vtable" id="pkgTable" style="margin-bottom:8px">
+        <thead><tr><th>패키지</th><th>버전</th></tr></thead>
+        <tbody><tr><td colspan="2" style="text-align:center;color:var(--text3)">로딩 중...</td></tr></tbody>
+      </table>
+      <button class="btn primary full" onclick="loadVersion()">🔄 정보 갱신</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="previewModal">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title" id="prevTitle">▶ 미리보기</div><button class="modal-close" onclick="closePreview()">✕</button></div>
+    <div class="modal-bd">
+      <div id="previewContent">
+        <div style="width:100%;aspect-ratio:9/16;max-height:320px;background:linear-gradient(135deg,var(--deep),var(--card2));border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+          <div style="font-size:36px;opacity:.3">🎬</div><div style="font-size:10.5px;color:var(--text3)">파일 없음</div>
+        </div>
+      </div>
+      <div class="flex-row" style="margin-top:8px;gap:5px">
+        <button class="btn success" style="flex:1" onclick="dlCurrentVideo()">📥 다운로드</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// SOCKET.IO
+// ═══════════════════════════════════════════
+const socket = io({transports:['websocket','polling'],reconnectionAttempts:10});
+
+socket.on('connect',()=>{
+  setDot('serverDot','ok');setText('serverTxt','연결됨');
+  addLog('서버 WebSocket 연결 완료','ok');
+  loadJobs();loadTrends();checkOllama();loadGPU();
+});
+socket.on('disconnect',()=>{
+  setDot('serverDot','err');setText('serverTxt','끊김');
+  addLog('서버 연결 끊김','err');
+});
+socket.on('job_update',data=>handleJobUpdate(data));
+socket.on('job_completed',data=>handleJobComplete(data));
+socket.on('job_error',data=>showToast('error','오류',data.message||'알 수 없는 오류'));
+socket.on('script_ready',data=>showScriptEditor(data));
+socket.on('pipeline_step',data=>{
+  if(data.job_id===state.currentJobId){
+    updatePipeline(data.progress,data.step);
+    // Also update URL pipeline if in URL mode
+    if(state.urlMode){
+      el('urlBarFill').style.width=data.progress+'%';
+      setText('urlBarPct',data.progress+'%');
+      setText('urlBarLabel',data.step);
+    }
+  }
+});
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+const state={
+  mode:'auto',
+  selected:new Set(),
+  customTopics:[],
+  trends:[],
+  isRunning:false,
+  currentJobId:null,
+  currentPreset:{id:'hd_high',codec:'libx264',w:1080,h:1920,fps:30,crf:18},
+  results:[],
+  currentPreviewPath:null,
+  bgStyle:'gradient',
+  urlMode:false,
+  urlMetadata:null,
+  urlStyle:'expand',
+  gpuInfo:null,
+};
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  startClock();startMetrics();
+  addLog('AI Shorts Studio PRO v6.0 초기화','ok');
+});
+
+// ═══════════════════════════════════════════
+// TAB NAVIGATION
+// ═══════════════════════════════════════════
+function switchTab(tab,btn){
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  const map={create:'tabCreate',url:'tabUrl',results:'tabResults'};
+  el(map[tab]).classList.add('active');
+  if(tab==='results')loadJobs();
+}
+
+// ═══════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════
+function startClock(){
+  const e=el('clock');
+  const tick=()=>e.textContent=new Date().toLocaleTimeString('ko-KR',{hour12:false});
+  tick();setInterval(tick,1000);
+}
+
+// ═══════════════════════════════════════════
+// METRICS
+// ═══════════════════════════════════════════
+function startMetrics(){
+  const tick=async()=>{
+    try{
+      const r=await fetch('/api/system');
+      if(!r.ok)throw 0;
+      applyMetrics(await r.json());
+    }catch{}
+  };
+  tick();setInterval(tick,3000);
+}
+
+function applyMetrics(d){
+  setBar('cpuBar',d.cpu,d.cpu<70?'fc':'fo');
+  setValCls('cpuVal',d.cpu+'%',d.cpu<70?'ok':d.cpu<85?'warn':'hot');
+  setBar('ramBar',d.ram_pct,'fg');
+  setValCls('ramVal',`${d.ram_used_gb||'--'}/${d.ram_total_gb||'--'}GB`,d.ram_pct<80?'ok':'warn');
+  setBar('diskBar',d.disk_pct,'fo');
+  setValCls('diskVal',`${d.disk_used_gb||'--'}/${d.disk_total_gb||'--'}GB`,d.disk_pct<80?'ok':'warn');
+  setText('activeWorkers',d.workers||0);
+  setText('cpuCores',(d.cpu_cores||'--')+'/'+(d.cpu_threads||'--'));
+  if(d.disk_used_gb)setText('storUsed',d.disk_used_gb+'GB');
+
+  // GPU real-time
+  if(d.gpu&&d.gpu.available){
+    const g=d.gpu;
+    setBar('vramBar',g.mem_total?g.mem_used/g.mem_total*100:0,'fp');
+    setValCls('vramVal',`${(g.mem_used/1024).toFixed(1)}/${(g.mem_total/1024).toFixed(1)}GB`,g.mem_used/g.mem_total<.8?'ok':'warn');
+    setBar('gpuUtilBar',g.util,'fc');
+    setValCls('gpuUtil',g.util+'%',g.util<70?'ok':g.util<85?'warn':'hot');
+  }
+}
+
+// ═══════════════════════════════════════════
+// GPU
+// ═══════════════════════════════════════════
+async function loadGPU(){
+  try{
+    const r=await fetch('/api/gpu');
+    const g=await r.json();
+    state.gpuInfo=g;
+
+    if(g.available){
+      setText('gpuName','🎮 '+g.name);
+      setText('gpuBadge',g.nvenc_supported?'NVENC':'GPU');
+      el('gpuBadge').className='badge '+(g.nvenc_supported?'b-green':'b-purple');
+      el('gpuDetail').innerHTML=
+        `Driver: ${g.driver_version} | CUDA: ${g.cuda_version} | Temp: ${g.temperature}°C`+
+        (g.power_draw?` | ${g.power_draw}W`:'');
+
+      setBar('vramBar',g.vram_total_mb?g.vram_used_mb/g.vram_total_mb*100:0,'fp');
+      setValCls('vramVal',`${(g.vram_used_mb/1024).toFixed(1)}/${(g.vram_total_mb/1024).toFixed(1)}GB`,'ok');
+      setBar('gpuUtilBar',g.utilization,'fc');
+      setValCls('gpuUtil',g.utilization+'%','ok');
+
+      setText('nvencStatus',g.nvenc_supported?'✅ ON':'❌ OFF');
+      el('nvencStatus').style.color=g.nvenc_supported?'var(--green)':'var(--red)';
+      setText('wsl2Status',g.wsl2?'✅ YES':'🖥 NO');
+
+      el('gpuPill').style.display='flex';
+      setDot('gpuDot','ok');
+      setText('gpuTxt',g.name.split(' ').pop());
+
+      // Encoder hint
+      el('encoderHint').textContent=g.nvenc_supported
+        ?`✅ ${g.name} NVENC 사용 가능`
+        :`💻 GPU 감지됨, NVENC 미지원 → CPU 사용`;
+
+      addLog(`GPU: ${g.name} (${(g.vram_total_mb/1024).toFixed(0)}GB VRAM)`,'ok');
+    }else{
+      setText('gpuName','❌ GPU 미감지');
+      setText('gpuBadge','N/A');
+      el('gpuBadge').className='badge b-red';
+      el('gpuDetail').textContent='NVIDIA 드라이버를 확인하세요';
+      setText('nvencStatus','❌');
+      el('nvencStatus').style.color='var(--red)';
+      setText('wsl2Status',g.wsl2?'✅':'🖥');
+      el('encoderHint').textContent='💻 CPU 인코딩 모드 (GPU 미감지)';
+      addLog('GPU 미감지 → CPU 인코딩','warn');
+    }
+  }catch(e){
+    setText('gpuName','⚠️ 정보 로드 실패');
+    addLog('GPU 정보 로드 실패','err');
+  }
+}
+
+// ═══════════════════════════════════════════
+// OLLAMA
+// ═══════════════════════════════════════════
+async function checkOllama(){
+  try{
+    const r=await fetch('/api/ollama/models');
+    const d=await r.json();
+    const on=d.available;
+    const s=el('ollamaStatus');
+    s.style.borderColor=on?'rgba(63,185,80,.3)':'rgba(248,81,73,.3)';
+    s.style.background=on?'rgba(63,185,80,.06)':'rgba(248,81,73,.06)';
+    s.style.color=on?'var(--green)':'var(--red)';
+    setText('ollamaStatusIcon',on?'✅':'⭕');
+    setText('ollamaStatusTxt',on?`연결됨 | ${(d.models||[]).length}개 모델`:'Ollama 미연결 (템플릿 모드)');
+    setDot('ollamaDot',on?'ok':'err');
+    setText('ollamaTxt',on?'OK':'OFF');
+    const sel=el('modelSelect');
+    sel.innerHTML=(d.models||[]).length
+      ?(d.models||[]).map(m=>`<option value="${m.name}" ${m.name===d.current?'selected':''}>${m.name} (${(m.size/1e9).toFixed(1)}GB)</option>`).join('')
+      :'<option value="">모델 없음</option>';
+    setText('ollamaModelBadge',d.current||'--');
+  }catch{setDot('ollamaDot','err')}
+}
+
+async function switchModel(model){
+  if(!model)return;
+  try{
+    const r=await fetch('/api/ollama/switch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model})});
+    const d=await r.json();
+    if(d.success){setText('ollamaModelBadge',model);showToast('success','모델 변경',model)}
+  }catch(e){showToast('error','실패',e.message)}
+}
+
+// ═══════════════════════════════════════════
+// TRENDS
+// ═══════════════════════════════════════════
+async function loadTrends(){
+  try{
+    const r=await fetch('/api/trends');const d=await r.json();
+    state.trends=d.trends||[];renderTopics();
+    addLog(`트렌드: ${state.trends.length}개 로드`,'ok');
+  }catch{addLog('트렌드 로드 실패','err')}
+}
+
+function renderTopics(){
+  const list=el('topicList');list.innerHTML='';
+  state.trends.forEach(t=>{
+    const sel=state.selected.has(t.rank);
+    const div=document.createElement('div');
+    div.className=`topic-item${sel?' sel':''}`;
+    div.onclick=()=>toggleTopic(t.rank);
+    div.innerHTML=`
+      <div class="t-num">${t.rank}</div>
+      <div class="t-info">
+        <div class="t-title">${t.icon||'🔥'} ${t.title}</div>
+        <div class="t-meta">
+          <span class="t-tag">👁 ${t.views}</span>
+          <span class="t-tag">🕐 ${t.age}</span>
+          <span class="t-tag">${t.category}</span>
+          ${t.hot?'<span class="badge b-red" style="font-size:7.5px">HOT</span>':''}
+        </div>
+      </div>`;
+    list.appendChild(div);
+  });
+  updateSelCount();
+}
+
+function toggleTopic(rank){state.selected.has(rank)?state.selected.delete(rank):state.selected.add(rank);renderTopics()}
+function selectAllTopics(){state.trends.forEach(t=>state.selected.add(t.rank));renderTopics()}
+function clearTopics(){state.selected.clear();state.customTopics=[];renderCustomTags();renderTopics()}
+function addCustom(){
+  const inp=el('customIn');const v=inp.value.trim();
+  if(!v)return;state.customTopics.push(v);inp.value='';
+  renderCustomTags();updateSelCount();
+}
+function renderCustomTags(){
+  el('customTags').innerHTML=state.customTopics.map((t,i)=>
+    `<span class="tag">${esc(t)}<span class="tag-rm" onclick="event.stopPropagation();rmCustom(${i})">✕</span></span>`
+  ).join('');
+}
+function rmCustom(i){state.customTopics.splice(i,1);renderCustomTags();updateSelCount()}
+function updateSelCount(){setText('selCount',(state.selected.size+state.customTopics.length)+'개')}
+function refreshTrends(){loadTrends();showToast('info','새로고침','트렌드 갱신')}
+
+// ═══════════════════════════════════════════
+// MODE
+// ═══════════════════════════════════════════
+function setMode(mode,btn){
+  state.mode=mode;
+  document.querySelectorAll('.mode-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  el('modeAuto').style.display=mode==='auto'?'block':'none';
+  el('modeManual').style.display=mode==='manual'?'block':'none';
+}
+
+function addManual(){
+  const list=el('manualList');
+  if(list.children.length>=10){showToast('warn','한도','최대 10개');return}
+  const n=list.children.length+1;
+  const div=document.createElement('div');div.className='input-row';
+  div.innerHTML=`<input class="inp" type="text" placeholder="주제 ${n}: 예) 2026 AI 트렌드"><button class="btn danger sm" onclick="this.parentElement.remove()">✕</button>`;
+  list.appendChild(div);
+}
+
+// ═══════════════════════════════════════════
+// URL ANALYSIS
+// ═══════════════════════════════════════════
+async function analyzeUrl(){
+  const url=el('urlInput').value.trim();
+  if(!url){showToast('warn','URL 없음','URL을 입력해주세요');return}
+
+  const btn=el('urlAnalyzeBtn');
+  btn.disabled=true;btn.innerHTML='<span class="loading-spin">⏳</span> 분석중...';
+  addLog(`URL 분석 시작: ${url.substring(0,50)}...`,'info');
+
+  try{
+    const r=await fetch('/api/analyze-url',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url})
+    });
+    const d=await r.json();
+
+    if(!r.ok||!d.success){
+      throw new Error(d.error||'분석 실패');
+    }
+
+    state.urlMetadata=d.metadata;
+    const m=d.metadata;
+    const styles=d.rewrite_styles;
+
+    let html=`
+      <div class="url-meta">
+        <div class="url-meta-title">${esc(m.title)}</div>
+        <div class="url-meta-row">
+          <span class="url-meta-tag">📺 ${esc(m.channel)}</span>
+          <span class="url-meta-tag">⏱ ${Math.floor(m.duration/60)}:${String(m.duration%60).padStart(2,'0')}</span>
+          ${m.view_count?`<span class="url-meta-tag">👁 ${formatNum(m.view_count)}</span>`:''}
+          ${m.like_count?`<span class="url-meta-tag">👍 ${formatNum(m.like_count)}</span>`:''}
+        </div>
+        ${m.tags.length?`<div class="url-meta-row">${m.tags.slice(0,8).map(t=>`<span class="url-meta-tag">#${esc(t)}</span>`).join('')}</div>`:''}
+        ${m.subtitles_text?`<div style="font-size:9px;color:var(--green);margin-top:4px">✅ 자막 추출 완료 (${m.subtitles_text.length}자)</div>`:'<div style="font-size:9px;color:var(--yellow);margin-top:4px">⚠ 자막 없음 (메타데이터 기반 분석)</div>'}
+        ${m.thumbnail?`<img class="url-thumb" src="${esc(m.thumbnail)}" alt="썸네일" onerror="this.style.display='none'">`:''}
+      </div>
+
+      <div style="margin-top:10px">
+        <div class="s-label" style="margin-bottom:5px">🎨 재해석 스타일 선택</div>
+        <div class="style-grid">
+          ${Object.entries(styles).map(([k,v])=>`
+            <div class="style-chip${k==='expand'?' active':''}" onclick="selectUrlStyle('${k}',this)">
+              <div class="sc-name">${esc(v.name)}</div>
+              <div class="sc-desc">${esc(v.desc)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <button class="btn-gen" style="margin-top:12px" onclick="generateFromUrl()">
+        🚀 URL 기반 영상 생성
+      </button>
+    `;
+
+    el('urlResult').innerHTML=html;
+    el('urlResult').style.display='block';
+    showToast('success','분석 완료',m.title.substring(0,30));
+    addLog(`URL 분석 완료: ${m.title.substring(0,30)}`,'ok');
+
+  }catch(e){
+    showToast('error','분석 실패',e.message);
+    addLog(`URL 분석 실패: ${e.message}`,'err');
+    el('urlResult').innerHTML=`<div style="padding:8px;color:var(--red);font-size:10.5px;margin-top:6px">❌ ${esc(e.message)}</div>`;
+    el('urlResult').style.display='block';
+  }finally{
+    btn.disabled=false;btn.innerHTML='🔍 분석';
+  }
+}
+
+function selectUrlStyle(style,elem){
+  state.urlStyle=style;
+  document.querySelectorAll('.style-chip').forEach(c=>c.classList.remove('active'));
+  elem.classList.add('active');
+}
+
+async function generateFromUrl(){
+  if(!state.urlMetadata){showToast('warn','오류','먼저 URL을 분석해주세요');return}
+  if(state.isRunning){showToast('warn','진행중','이미 작업이 진행중입니다');return}
+
+  state.isRunning=true;state.urlMode=true;
+  el('urlPipeline').style.display='block';
+  setText('urlPipeStatus','처리중');
+  addLog(`URL 기반 생성 시작 (${state.urlStyle})`,'info');
+
+  try{
+    const r=await fetch('/api/generate-from-url',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        metadata:state.urlMetadata,
+        style:state.urlStyle,
+        options:getOptions()
+      })
+    });
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'생성 실패');
+
+    state.currentJobId=d.job_id;
+    setText('genIcon','⏸');setText('genTxt','중지');
+    addResult({id:d.job_id,title:d.topic.substring(0,40),status:'running',progress:0,time:now()});
+    showToast('info','생성 시작','URL 기반 영상 생성 시작');
+  }catch(e){
+    showToast('error','실패',e.message);
+    state.isRunning=false;state.urlMode=false;
+  }
+}
+
+// ═══════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════
+function setPre(elem,id,codec,w,h,fps,crf){
+  document.querySelectorAll('.preset-grid .preset-chip').forEach(c=>c.classList.remove('active'));
+  elem.classList.add('active');
+  state.currentPreset={id,codec,w,h,fps,crf};
+  el('crfRange').value=crf;el('crfV').textContent=crf;
+  const labels={'4k_ultra':'4K ULTRA','hd_high':'HD HIGH','hd_standard':'HD STD','yt_shorts':'YT SHORTS','fast_draft':'FAST','tiktok':'TIKTOK'};
+  setText('presetBadge',labels[id]||id.toUpperCase());
+}
+
+function setBg(elem,style){
+  // Select only sibling chips within the same parent grid
+  elem.parentElement.querySelectorAll('.preset-chip').forEach(c=>c.classList.remove('active'));
+  elem.classList.add('active');
+  state.bgStyle=style;
+}
+
+function getOptions(){
+  const pre=state.currentPreset;
+  const encoderSel=el('encoderSel').value;
+  return{
+    width:pre.w,height:pre.h,fps:pre.fps,
+    crf:parseInt(el('crfRange').value),
+    codec:pre.codec,
+    voice:el('voiceSel').value,
+    bgm:el('bgmSel').value,
+    tts_speed:el('ttsSpeed').value,
+    bg_style:state.bgStyle,
+    use_gpu:encoderSel==='auto'?true:encoderSel==='gpu',
+    preset:pre.crf<=18?'slow':'fast',
+  };
+}
+
+// ═══════════════════════════════════════════
+// GENERATION
+// ═══════════════════════════════════════════
+function getTopics(){
+  let topics=[];
+  if(state.mode==='auto'){
+    state.trends.filter(t=>state.selected.has(t.rank)).forEach(t=>topics.push(t.title));
+    state.customTopics.forEach(t=>topics.push(t));
+  }else{
+    [...document.querySelectorAll('#manualList input')].forEach(i=>{if(i.value.trim())topics.push(i.value.trim())});
+  }
+  return[...new Set(topics)];
+}
+
+async function startGeneration(){
+  if(state.isRunning){stopGeneration();return}
+  const topics=getTopics();
+  if(!topics.length){showToast('warn','주제 없음','1개 이상 선택해주세요');return}
+
+  state.isRunning=true;state.urlMode=false;
+  setText('genIcon','⏸');setText('genTxt','중지');
+  setText('pipeStatus',`${topics.length}개 처리중`);
+  addLog(`생성 시작: ${topics.length}개`,'info');
+  showToast('info','생성 시작',`${topics.length}개 영상 생성`);
+
+  // Update encoder display
+  const enc=el('encoderSel').value;
+  const gpuAvail=state.gpuInfo&&state.gpuInfo.nvenc_supported;
+  setText('dEncoder',(enc==='gpu'||(enc==='auto'&&gpuAvail))?'NVENC':'CPU');
+
+  try{
+    const r=await fetch('/api/generate',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({topics,options:getOptions(),topic_mode:state.mode}),
+    });
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'서버 오류');
+    state.currentJobId=d.job_id;
+    addLog(`작업 ID: ${d.job_id}`,'ok');
+    addResult({id:d.job_id,title:topics[0].substring(0,30),status:'running',progress:0,time:now()});
+  }catch(e){
+    showToast('error','실패',e.message);resetGen();
+  }
+}
+
+function stopGeneration(){
+  if(state.currentJobId)fetch(`/api/job/${state.currentJobId}/cancel`,{method:'POST'});
+  resetGen();showToast('warn','중지됨','작업이 중지되었습니다');
+}
+
+function resetGen(){
+  state.isRunning=false;state.currentJobId=null;state.urlMode=false;
+  setText('genIcon','🚀');setText('genTxt','영상 생성 시작');
+  setText('pipeStatus','대기중');
+  setText('urlPipeStatus','대기중');
+  resetPipeline();
+}
+
+// ═══════════════════════════════════════════
+// PIPELINE UI
+// ═══════════════════════════════════════════
+const STEP_MAP={'트렌드 수집':0,'AI 대본 생성':1,'URL 분석 시나리오 재구성':1,'TTS 음성 합성':2,'BGM 믹싱':3,'자막 생성':4,'영상 렌더링':5,'후처리':6,'완료':7};
+
+function updatePipeline(pct,stepName){
+  el('barFill').style.width=pct+'%';
+  setText('barPct',pct+'%');setText('barLabel',stepName);setText('dTask',stepName);
+  const si=STEP_MAP[stepName]??-1;
+  document.querySelectorAll('.step').forEach((s,i)=>{
+    s.classList.remove('done','active');
+    if(i<si)s.classList.add('done');
+    else if(i===si)s.classList.add('active');
+  });
+  const eta=Math.max(0,Math.round((100-pct)/5));
+  setText('dETA',`${Math.floor(eta/60)}:${String(eta%60).padStart(2,'0')}`);
+}
+
+function resetPipeline(){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('done','active'));
+  el('barFill').style.width='0%';
+  setText('barPct','0%');setText('barLabel','대기중');
+  setText('dTask','대기');setText('dETA','--:--');
+  el('urlBarFill')&&(el('urlBarFill').style.width='0%');
+}
+
+// ═══════════════════════════════════════════
+// SCRIPT EDITOR
+// ═══════════════════════════════════════════
+function showScriptEditor(data){
+  el('editorCard').classList.add('show');
+  setText('editorTopicBadge','주제: '+(data.topic||'').substring(0,40));
+  el('scriptTA').value=data.script||'';
+  setText('editorModelBadge',data.model||'--');
+  updateWC();window._currentScriptId=data.script_id;
+  el('editorCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function updateWC(){const t=el('scriptTA').value;setText('wc',`글자수: ${t.length} | 예상: ${Math.round(t.length/5)}초`)}
+async function saveScript(){
+  const content=el('scriptTA').value;
+  if(window._currentScriptId)await fetch(`/api/script/${window._currentScriptId}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({content})});
+  closeEditor();showToast('success','저장','시나리오 저장됨');
+}
+function skipScript(){closeEditor()}
+function closeEditor(){el('editorCard').classList.remove('show')}
+function regenScript(){el('scriptTA').value='🤖 AI 재생성 중... (Ollama 연결 필요)';updateWC()}
+
+// ═══════════════════════════════════════════
+// RESULTS
+// ═══════════════════════════════════════════
+function addResult(r){state.results.unshift(r);renderResults()}
+
+function handleJobUpdate(data){
+  const idx=state.results.findIndex(r=>r.id===data.id);
+  if(idx>=0){state.results[idx]={...state.results[idx],...data};renderResults()}
+  if(data.current_step)updatePipeline(data.progress||0,data.current_step);
+}
+
+function handleJobComplete(data){
+  const idx=state.results.findIndex(r=>r.id===data.job_id);
+  if(idx>=0){state.results[idx].status='completed';state.results[idx].progress=100;state.results[idx].outputs=data.outputs;state.results[idx].output_files=data.outputs}
+  renderResults();resetGen();
+  showToast('success','완료!',`${(data.outputs||[]).length}개 영상 완성`);
+  addLog(`완료: ${data.job_id} (${data.duration}초)`,'ok');
+  const done=parseInt(el('sDone').textContent||0);setText('sDone',done+(data.outputs||[]).length);
+  const total=parseInt(el('totalVid').textContent||0);setText('totalVid',total+(data.outputs||[]).length);
+  const today=parseInt(el('todayVid').textContent||0);setText('todayVid',today+(data.outputs||[]).length);
+  if(data.duration)setText('avgTime',(data.duration/60).toFixed(1)+'분');
+}
+
+async function loadJobs(){
+  try{
+    const r=await fetch('/api/jobs');const d=await r.json();
+    state.results=(d.jobs||[]).slice(0,30);renderResults();
+    setText('sDone',state.results.filter(r=>r.status==='completed').length);
+    setText('sRun',state.results.filter(r=>r.status==='running').length);
+    setText('sFail',state.results.filter(r=>r.status==='failed').length);
+    setText('totalVid',state.results.length);
+  }catch{}
+}
+
+function renderResults(){
+  const list=el('rList');setText('rCount',state.results.length+'건');
+  if(!state.results.length){
+    list.innerHTML='<div style="padding:18px;text-align:center;color:var(--text3);font-size:10.5px"><div style="font-size:28px;margin-bottom:5px">🎬</div>생성된 영상이 여기 표시됩니다</div>';
+    return;
+  }
+  list.innerHTML='';
+  state.results.forEach(r=>{
+    const e=document.createElement('div');e.className='ritem';
+    const iconCls={completed:'done',running:'running',pending:'pending',failed:'failed',cancelled:'failed'}[r.status]||'pending';
+    const icon={completed:'✅',running:'⚙️',pending:'⏳',failed:'❌',cancelled:'⛔'}[r.status]||'❓';
+    const pct=r.progress||0;
+    const outputs=r.output_files||r.outputs||[];
+    let btnHtml='';
+    if(r.status==='completed'&&outputs.length>0){
+      const fp=outputs[0].path||'';
+      btnHtml=`<button class="btn sm success" onclick="openPreview('${esc(r.title||r.id)}','${esc(fp)}')">▶</button><button class="btn sm" onclick="dlFile('${esc(fp)}')">📥</button>`;
+    }else if(r.status==='running'){btnHtml=`<span class="badge b-cyan">${pct}%</span>`}
+    else if(r.status==='failed'){btnHtml=`<span class="badge b-red">실패</span>`}
+    e.innerHTML=`
+      <div class="rrow1">
+        <div class="r-icon ${iconCls}">${icon}</div>
+        <div class="r-title">${esc(r.title||r.id)}</div>
+        <div class="r-time">${r.created_at?new Date(r.created_at).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):r.time||''}</div>
+      </div>
+      <div class="r-pbar"><div class="r-pfill" style="width:${pct}%"></div></div>
+      <div class="rrow2">
+        ${r.llm_model?`<span class="rmodel">${esc(r.llm_model)}</span>`:''}
+        ${outputs[0]?.size_mb?`<span class="rtag">${outputs[0].size_mb}MB</span>`:''}
+        ${r.duration_sec?`<span class="rtag">${r.duration_sec}s</span>`:''}
+        ${btnHtml}
+      </div>`;
+    list.appendChild(e);
+  });
+}
+
+// ═══════════════════════════════════════════
+// PREVIEW & DOWNLOAD
+// ═══════════════════════════════════════════
+function openPreview(title,fp){
+  setText('prevTitle','▶ '+title);state.currentPreviewPath=fp;
+  const c=el('previewContent');
+  // Encode each path segment separately to preserve /
+  const safeUrl='/api/preview/'+fp.split('/').map(s=>encodeURIComponent(s)).join('/');
+  c.innerHTML=fp
+    ?`<video class="preview-video" controls autoplay><source src="${safeUrl}" type="video/mp4"></video>`
+    :'<div style="padding:20px;text-align:center;color:var(--text3)">파일 없음</div>';
+  openModal('previewModal');
+}
+function closePreview(){const v=document.querySelector('#previewContent video');if(v){v.pause();v.src=''}closeModal('previewModal')}
+function dlFile(path){
+  if(path){
+    const safeUrl='/api/download/'+path.split('/').map(s=>encodeURIComponent(s)).join('/');
+    window.open(safeUrl);
+  }else showToast('warn','파일 없음','경로 없음');
+}
+function dlCurrentVideo(){if(state.currentPreviewPath)dlFile(state.currentPreviewPath)}
+
+// ═══════════════════════════════════════════
+// VERSION
+// ═══════════════════════════════════════════
+async function loadVersion(){
+  try{
+    const r=await fetch('/api/version');const d=await r.json();
+    // GPU table
+    const gt=el('gpuTable');
+    if(d.gpu&&d.gpu.available){
+      const g=d.gpu;
+      setText('verGpuName',g.name.split(' ').slice(-2).join(' '));
+      gt.innerHTML=`
+        <tr><td>이름</td><td class="v-ok">${g.name}</td></tr>
+        <tr><td>VRAM</td><td class="v-ok">${(g.vram_total_mb/1024).toFixed(1)} GB</td></tr>
+        <tr><td>Driver</td><td>${g.driver_version}</td></tr>
+        <tr><td>CUDA</td><td>${g.cuda_version}</td></tr>
+        <tr><td>NVENC</td><td class="${g.nvenc_supported?'v-ok':'v-err'}">${g.nvenc_supported?'지원':'미지원'}</td></tr>
+        <tr><td>WSL2</td><td>${g.wsl2?'Yes':'No'}</td></tr>
+        <tr><td>Compute</td><td>${g.compute_capability}</td></tr>`;
+    }else{
+      setText('verGpuName','N/A');
+      gt.innerHTML='<tr><td colspan="2" style="text-align:center;color:var(--text3)">GPU 미감지</td></tr>';
+    }
+    // Models
+    const mb=document.querySelector('#modelTable tbody');
+    mb.innerHTML=(d.ollama_models||[]).length
+      ?(d.ollama_models||[]).map(m=>`<tr><td>${m.name}</td><td class="v-ok">${(m.size/1e9).toFixed(1)}GB</td></tr>`).join('')
+      :'<tr><td colspan="2" style="color:var(--text3);text-align:center">모델 없음</td></tr>';
+    // Packages
+    const pb=document.querySelector('#pkgTable tbody');
+    pb.innerHTML=Object.entries(d.packages||{}).map(([k,v])=>
+      `<tr><td>${k}</td><td class="${v==='N/A'?'v-err':'v-ok'}">${v}</td></tr>`
+    ).join('');
+  }catch{}
+}
+
+// ═══════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════
+function openModal(id){el(id).classList.add('open');if(id==='versionModal')loadVersion()}
+function closeModal(id){el(id).classList.remove('open')}
+document.querySelectorAll('.modal-ov').forEach(ov=>{
+  ov.addEventListener('click',e=>{
+    if(e.target===ov){if(ov.id==='previewModal')closePreview();else ov.classList.remove('open')}
+  });
+});
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+function showToast(type,title,msg,dur=4000){
+  const icons={success:'✅',error:'❌',info:'ℹ️',warn:'⚠️'};
+  const wrap=el('toastWrap');const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  t.innerHTML=`<div class="t-ico">${icons[type]||'ℹ️'}</div><div class="t-cnt"><div class="t-title">${esc(title)}</div><div class="t-msg">${esc(msg)}</div></div>`;
+  wrap.appendChild(t);
+  while(wrap.children.length>5)wrap.removeChild(wrap.firstChild);
+  setTimeout(()=>{t.classList.add('hiding');setTimeout(()=>t.remove(),280)},dur);
+}
+
+// ═══════════════════════════════════════════
+// LOG
+// ═══════════════════════════════════════════
+function addLog(msg,type='info'){
+  const con=el('logCon');
+  const t=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  const icons={info:'·',ok:'✓',warn:'⚠',err:'✕'};
+  const e=document.createElement('div');e.className='ll';
+  e.innerHTML=`<span class="lt">[${t}]</span><span class="lm ${type}">${icons[type]||'·'} ${esc(msg)}</span>`;
+  con.appendChild(e);con.scrollTop=con.scrollHeight;
+  while(con.children.length>80)con.removeChild(con.firstChild);
+}
+function clearLog(){el('logCon').innerHTML=''}
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function el(id){return document.getElementById(id)}
+function setText(id,val){const e=el(id);if(e)e.textContent=val}
+function setDot(id,cls){const e=el(id);if(e)e.className=`dot ${cls}`}
+function setValCls(id,val,cls){const e=el(id);if(e){e.textContent=val;e.className='mval '+cls}}
+function setBar(id,pct,cls){const e=el(id);if(e){e.style.width=Math.min(100,pct||0)+'%';e.className='bar-fill '+cls}}
+function now(){return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+function formatNum(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return n+''}
+</script>
+</body>
+</html>

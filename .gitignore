@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Runtime data
+*.pid
+*.pid.lock
+
+# dotenv
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# PM2
+.pm2/
+pids/
+
+# Logs
+logs/
+*.log
+
+# DB
+data/
+
+# Output files (too large for git)
+output/
+
+# Cache
+cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temp
+*.backup
+*.bak
+*.tar.gz
+*.zip

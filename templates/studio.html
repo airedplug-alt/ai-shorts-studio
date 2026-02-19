@@ -1,0 +1,1938 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI SHORTS STUDIO PRO v1.0.0</title>
+<link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════ CSS RESET & VARIABLES ═══════ */
+:root {
+  --void:#010409; --deep:#0d1117; --card:#161b22; --card2:#1c2128;
+  --hover:#21262d; --border:#30363d; --brite:#484f58;
+  --cyan:#00d4ff; --purple:#7c3aed; --green:#3fb950;
+  --orange:#e3700a; --red:#f85149; --yellow:#d29922; --pink:#f778ba;
+  --text1:#e6edf3; --text2:#8b949e; --text3:#484f58;
+  --glow-cyan: 0 0 12px rgba(0,212,255,.3);
+  --glow-purple: 0 0 12px rgba(124,58,237,.3);
+  --glow-green: 0 0 12px rgba(63,185,80,.3);
+  --radius: 10px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{height:100%;scroll-behavior:smooth}
+body{
+  background:var(--void);color:var(--text1);font-family:'Noto Sans KR',sans-serif;
+  height:100%;overflow:hidden;
+  background-image:
+    linear-gradient(rgba(0,212,255,.015) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,255,.015) 1px,transparent 1px);
+  background-size:44px 44px;
+}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--brite);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text2)}
+::selection{background:rgba(0,212,255,.2);color:#fff}
+a{color:var(--cyan);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ═══════ HEADER ═══════ */
+.hdr{
+  position:fixed;top:0;left:0;right:0;z-index:200;height:52px;
+  background:rgba(1,4,9,.95);border-bottom:1px solid var(--border);
+  backdrop-filter:blur(20px);padding:0 16px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.logo{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.logo-icon{
+  width:32px;height:32px;border-radius:8px;
+  background:linear-gradient(135deg,var(--cyan),var(--purple));
+  display:flex;align-items:center;justify-content:center;font-size:15px;
+  box-shadow:var(--glow-cyan);
+}
+.logo-name{
+  font-family:'Orbitron',monospace;font-weight:900;font-size:12px;letter-spacing:2px;
+  background:linear-gradient(135deg,var(--cyan),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.logo-ver{
+  font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;
+  border:1px solid var(--border);padding:2px 5px;border-radius:3px;
+}
+.hdr-center{display:flex;align-items:center;gap:8px}
+.nav-tab{
+  padding:4px 10px;border-radius:5px;border:1px solid transparent;
+  background:transparent;color:var(--text2);font-size:10.5px;cursor:pointer;
+  font-family:'Noto Sans KR',sans-serif;transition:all .2s;
+  display:flex;align-items:center;gap:4px;
+}
+.nav-tab:hover{color:var(--text1);background:var(--hover)}
+.nav-tab.active{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,.06)}
+.hdr-status{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.status-pill{display:flex;align-items:center;gap:5px;font-size:9.5px;font-family:'JetBrains Mono',monospace;color:var(--text2)}
+.dot{width:7px;height:7px;border-radius:50%;animation:blink 2s ease-in-out infinite}
+.dot.ok{background:var(--green);box-shadow:0 0 5px var(--green)}
+.dot.warn{background:var(--yellow);box-shadow:0 0 5px var(--yellow)}
+.dot.err{background:var(--red);box-shadow:0 0 5px var(--red)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ═══════ LAYOUT ═══════ */
+.layout{display:grid;grid-template-columns:280px 1fr 300px;height:calc(100vh - 52px);margin-top:52px}
+.left-panel,.center-panel,.right-panel{overflow-y:auto;overflow-x:hidden;height:100%}
+.left-panel{border-right:1px solid var(--border);padding:10px;display:flex;flex-direction:column;gap:8px}
+.center-panel{padding:12px;display:flex;flex-direction:column;gap:10px}
+.right-panel{border-left:1px solid var(--border);padding:10px;display:flex;flex-direction:column;gap:8px}
+
+/* ═══════ TAB CONTENT ═══════ */
+.tab-content{display:none;flex-direction:column;gap:10px;flex:1;min-height:0}
+.tab-content.active{display:flex}
+
+/* ═══════ CARD ═══════ */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .2s;flex-shrink:0}
+.card:hover{border-color:var(--brite)}
+.card-hd{
+  padding:7px 11px;background:var(--card2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.card-title{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text2);display:flex;align-items:center;gap:5px}
+.card-bd{padding:9px 11px}
+.card.accent{border-color:rgba(0,212,255,.2)}
+.card.accent .card-hd{background:rgba(0,212,255,.04)}
+
+/* ═══════ FORM ELEMENTS ═══════ */
+textarea,input[type="text"],input[type="number"],input[type="color"],select{
+  width:100%;background:var(--deep);border:1px solid var(--border);border-radius:6px;
+  color:var(--text1);font-family:'Noto Sans KR',sans-serif;font-size:12px;
+  padding:7px 9px;outline:none;transition:border-color .2s;
+}
+textarea:focus,input:focus,select:focus{border-color:var(--cyan)}
+textarea{resize:vertical;min-height:60px;line-height:1.5}
+select{cursor:pointer;-webkit-appearance:none;-moz-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238b949e'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 8px center;padding-right:24px;
+}
+label{font-size:10px;font-weight:500;color:var(--text2);letter-spacing:.4px;margin-bottom:2px;display:block}
+
+.form-row{display:flex;gap:8px;align-items:end}
+.form-row>*{flex:1}
+.form-group{display:flex;flex-direction:column;gap:3px;margin-bottom:6px}
+
+/* ═══════ BUTTONS ═══════ */
+.btn{
+  border:1px solid var(--border);border-radius:6px;padding:7px 14px;cursor:pointer;
+  font-family:'Noto Sans KR',sans-serif;font-size:11.5px;font-weight:600;
+  transition:all .2s;display:inline-flex;align-items:center;gap:5px;
+  white-space:nowrap;
+}
+.btn-primary{
+  background:linear-gradient(135deg,var(--cyan),var(--purple));
+  border-color:transparent;color:#fff;
+  box-shadow:var(--glow-cyan);
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 0 20px rgba(0,212,255,.4)}
+.btn-primary:disabled{opacity:.5;pointer-events:none}
+.btn-secondary{background:var(--card2);color:var(--text1)}
+.btn-secondary:hover{background:var(--hover);border-color:var(--brite)}
+.btn-danger{background:rgba(248,81,73,.1);border-color:rgba(248,81,73,.3);color:var(--red)}
+.btn-danger:hover{background:rgba(248,81,73,.2)}
+.btn-green{background:rgba(63,185,80,.1);border-color:rgba(63,185,80,.3);color:var(--green)}
+.btn-green:hover{background:rgba(63,185,80,.2)}
+.btn-sm{padding:4px 8px;font-size:10px}
+.btn-full{width:100%;justify-content:center}
+.btn-group{display:flex;gap:4px;flex-wrap:wrap}
+
+/* ═══════ RADIO GROUP ═══════ */
+.radio-group{display:flex;gap:4px;flex-wrap:wrap}
+.radio-opt{
+  padding:4px 10px;border-radius:5px;border:1px solid var(--border);
+  background:var(--deep);color:var(--text2);font-size:10px;cursor:pointer;
+  transition:all .2s;display:flex;align-items:center;gap:3px;
+}
+.radio-opt:hover{border-color:var(--brite);color:var(--text1)}
+.radio-opt.active{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,.06)}
+.radio-opt input{display:none}
+
+/* ═══════ SCENARIO COMPARISON ═══════ */
+.scenario-compare{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0}
+.scenario-card{
+  background:var(--card);border:2px solid var(--border);border-radius:var(--radius);
+  padding:10px;cursor:pointer;transition:all .3s;position:relative;
+}
+.scenario-card:hover{border-color:var(--brite)}
+.scenario-card.selected{border-color:var(--cyan);box-shadow:var(--glow-cyan)}
+.scenario-card .sc-badge{
+  position:absolute;top:-8px;left:12px;
+  font-size:9px;font-weight:700;padding:2px 8px;border-radius:3px;
+  background:linear-gradient(135deg,var(--cyan),var(--purple));color:#fff;
+}
+.scenario-card .sc-style{font-size:11px;font-weight:700;margin:6px 0 4px;display:flex;align-items:center;gap:4px}
+.scenario-card .sc-preview{font-size:10.5px;color:var(--text2);line-height:1.5;max-height:80px;overflow:hidden}
+
+/* ═══════ SCENE LIST ═══════ */
+.scene-list{display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto}
+.scene-item{
+  background:var(--deep);border:1px solid var(--border);border-radius:8px;
+  padding:8px;transition:all .2s;
+}
+.scene-item:hover{border-color:var(--brite)}
+.scene-item .si-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.scene-item .si-num{
+  font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;
+  color:var(--cyan);background:rgba(0,212,255,.1);padding:2px 6px;border-radius:3px;
+}
+.scene-item .si-dur{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.scene-item .si-narr{font-size:10.5px;line-height:1.4;color:var(--text2);margin-bottom:4px}
+.scene-item .si-details{display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:9.5px;color:var(--text3)}
+.scene-item .si-details span{display:flex;align-items:center;gap:2px}
+.scene-item textarea{min-height:38px;font-size:10px;margin-top:3px}
+
+/* ═══════ PROGRESS ═══════ */
+.progress-panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:none}
+.progress-panel.active{display:block}
+.prog-header{padding:10px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.prog-title{font-size:11px;font-weight:700;color:var(--cyan);display:flex;align-items:center;gap:5px}
+.prog-eta{font-size:10px;color:var(--text2);font-family:'JetBrains Mono',monospace}
+.prog-bar-wrap{height:4px;background:var(--deep);margin:0 12px 8px}
+.prog-bar{height:100%;background:linear-gradient(90deg,var(--cyan),var(--purple));border-radius:2px;transition:width .5s ease;width:0%}
+.prog-body{padding:8px 12px;max-height:200px;overflow-y:auto}
+.prog-scene{
+  display:flex;align-items:center;gap:8px;padding:3px 0;font-size:10px;
+  border-bottom:1px solid rgba(48,54,61,.3);
+}
+.prog-scene:last-child{border-bottom:none}
+.prog-scene .ps-num{width:50px;font-family:'JetBrains Mono',monospace;color:var(--text3)}
+.prog-scene .ps-status{flex:1}
+.prog-scene .ps-time{width:40px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--text3)}
+.prog-scene.done .ps-num{color:var(--green)}
+.prog-scene.done .ps-status{color:var(--green)}
+.prog-scene.active .ps-num{color:var(--cyan)}
+.prog-scene.active .ps-status{color:var(--cyan)}
+.prog-scene.active .ps-status::after{content:' ...';animation:dots 1.5s steps(3,end) infinite}
+@keyframes dots{0%{content:' .'}33%{content:' ..'}66%{content:' ...'}}
+.prog-gpu{
+  padding:6px 12px;background:var(--card2);border-top:1px solid var(--border);
+  display:flex;gap:12px;font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;
+}
+.prog-gpu span{display:flex;align-items:center;gap:3px}
+
+/* ═══════ JOB LIST / HISTORY ═══════ */
+.job-item{
+  background:var(--deep);border:1px solid var(--border);border-radius:8px;
+  padding:8px 10px;margin-bottom:4px;display:flex;flex-direction:column;gap:4px;
+  transition:all .2s;
+}
+.job-item:hover{border-color:var(--brite)}
+.job-item .ji-row{display:flex;justify-content:space-between;align-items:center}
+.job-item .ji-title{font-size:11px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.job-item .ji-status{
+  font-size:9px;padding:2px 6px;border-radius:3px;font-weight:600;
+  font-family:'JetBrains Mono',monospace;
+}
+.ji-status.running{color:var(--cyan);background:rgba(0,212,255,.1)}
+.ji-status.completed{color:var(--green);background:rgba(63,185,80,.1)}
+.ji-status.failed{color:var(--red);background:rgba(248,81,73,.1)}
+.ji-status.pending{color:var(--yellow);background:rgba(210,153,34,.1)}
+.ji-status.cancelled{color:var(--text3);background:rgba(72,79,88,.2)}
+.job-item .ji-meta{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.job-item .ji-actions{display:flex;gap:3px;margin-top:2px}
+.job-item .ji-progress{height:2px;background:var(--deep);border-radius:1px;overflow:hidden;margin-top:2px}
+.job-item .ji-progress .bar{height:100%;background:linear-gradient(90deg,var(--cyan),var(--purple));transition:width .3s}
+
+/* ═══════ OUTPUT GALLERY ═══════ */
+.gallery{display:flex;flex-direction:column;gap:8px}
+.gallery-item{
+  background:var(--deep);border:1px solid var(--border);border-radius:8px;
+  overflow:hidden;transition:all .2s;
+}
+.gallery-item:hover{border-color:var(--brite)}
+.gallery-item video{width:100%;max-height:200px;object-fit:contain;background:#000}
+.gallery-item .gi-info{padding:6px 8px;display:flex;justify-content:space-between;align-items:center}
+.gallery-item .gi-name{font-size:10px;color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gallery-item .gi-size{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.gallery-item .gi-actions{display:flex;gap:3px;padding:4px 8px;border-top:1px solid var(--border)}
+
+/* ═══════ SETTINGS MODAL ═══════ */
+.modal-overlay{
+  display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(1,4,9,.85);z-index:300;
+  align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.active{display:flex}
+.modal{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  width:90%;max-width:700px;max-height:85vh;overflow:hidden;
+  box-shadow:0 25px 60px rgba(0,0,0,.5);
+}
+.modal-hd{
+  padding:12px 16px;border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--card2);
+}
+.modal-hd h3{font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px}
+.modal-close{
+  background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;
+  width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+  border-radius:4px;
+}
+.modal-close:hover{background:var(--hover);color:var(--text1)}
+.modal-bd{padding:16px;overflow-y:auto;max-height:calc(85vh - 60px)}
+.modal-tabs{display:flex;gap:2px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:6px}
+.modal-tab{
+  padding:6px 12px;border-radius:5px 5px 0 0;border:1px solid transparent;
+  background:transparent;color:var(--text2);font-size:11px;cursor:pointer;
+  font-family:'Noto Sans KR',sans-serif;transition:all .2s;
+}
+.modal-tab:hover{color:var(--text1)}
+.modal-tab.active{color:var(--cyan);border-color:var(--border);border-bottom-color:var(--card);background:var(--card)}
+.settings-section{display:none}
+.settings-section.active{display:block}
+.settings-section h4{font-size:12px;font-weight:700;margin:10px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:5px}
+.settings-row{display:flex;gap:10px;margin-bottom:8px;align-items:start}
+.settings-row label{min-width:90px;font-size:10.5px;color:var(--text2);padding-top:8px}
+.settings-row .input-wrap{flex:1}
+.settings-hint{font-size:9px;color:var(--text3);margin-top:2px}
+
+/* ═══════ HELP / TOOLTIP ═══════ */
+.tooltip{position:relative;cursor:help}
+.tooltip::after{
+  content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;
+  transform:translateX(-50%);background:var(--card2);border:1px solid var(--border);
+  color:var(--text1);font-size:10px;padding:4px 8px;border-radius:4px;
+  white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;z-index:100;
+}
+.tooltip:hover::after{opacity:1}
+
+/* ═══════ TAGS ═══════ */
+.tag{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:2px 7px;border-radius:4px;font-size:9px;font-weight:600;
+  background:rgba(0,212,255,.08);color:var(--cyan);border:1px solid rgba(0,212,255,.15);
+}
+.tag.green{background:rgba(63,185,80,.08);color:var(--green);border-color:rgba(63,185,80,.15)}
+.tag.purple{background:rgba(124,58,237,.08);color:var(--purple);border-color:rgba(124,58,237,.15)}
+.tag.orange{background:rgba(227,112,10,.08);color:var(--orange);border-color:rgba(227,112,10,.15)}
+.tag.red{background:rgba(248,81,73,.08);color:var(--red);border-color:rgba(248,81,73,.15)}
+
+/* ═══════ SPINNER ═══════ */
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ═══════ MISC ═══════ */
+.empty-state{text-align:center;padding:30px;color:var(--text3);font-size:11px}
+.empty-state .es-icon{font-size:28px;margin-bottom:8px;opacity:.5}
+.divider{height:1px;background:var(--border);margin:8px 0}
+.text-cyan{color:var(--cyan)}
+.text-green{color:var(--green)}
+.text-red{color:var(--red)}
+.text-yellow{color:var(--yellow)}
+.text-muted{color:var(--text3)}
+.mono{font-family:'JetBrains Mono',monospace}
+.flex-between{display:flex;justify-content:space-between;align-items:center}
+.gap-4{gap:4px}
+.mb-4{margin-bottom:4px}
+.mt-4{margin-top:4px}
+.hidden{display:none !important}
+
+/* ═══════ RESPONSIVE ═══════ */
+@media(max-width:1200px){.layout{grid-template-columns:240px 1fr 260px}}
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr;grid-template-rows:auto 1fr auto}
+  .left-panel,.right-panel{max-height:35vh}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════ HEADER ═══════ -->
+<header class="hdr">
+  <div class="logo">
+    <div class="logo-icon">AI</div>
+    <div>
+      <div class="logo-name">SHORTS STUDIO</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="logo-ver" id="verLabel">v1.0.0</span>
+        <span style="font-size:8px;color:var(--text3);font-family:'JetBrains Mono',monospace">© chally.choi</span>
+      </div>
+    </div>
+  </div>
+  <div class="hdr-center">
+    <button class="nav-tab active" data-tab="create">🎬 AI 영상제작</button>
+    <button class="nav-tab" data-tab="legacy">📺 간편 모드</button>
+    <button class="nav-tab" data-tab="history">📁 히스토리</button>
+  </div>
+  <div class="hdr-status">
+    <span class="status-pill"><span class="dot" id="dotOllama"></span><span id="lblOllama">LLM</span></span>
+    <span class="status-pill"><span class="dot" id="dotComfy"></span><span id="lblComfy">ComfyUI</span></span>
+    <span class="status-pill"><span class="dot" id="dotGpu"></span><span id="lblGpu">GPU</span></span>
+    <button class="btn btn-sm btn-secondary" onclick="openSettings()">⚙️</button>
+  </div>
+</header>
+
+<!-- ═══════ MAIN LAYOUT ═══════ -->
+<main class="layout">
+
+  <!-- ═══════ LEFT PANEL ═══════ -->
+  <aside class="left-panel">
+    <!-- v7 AI VIDEO TAB -->
+    <div class="tab-content active" id="tabCreate">
+      <!-- Topic Input -->
+      <div class="card accent">
+        <div class="card-hd"><span class="card-title">📝 주제 입력</span></div>
+        <div class="card-bd">
+          <div class="form-group">
+            <textarea id="topicInput" rows="2" placeholder="예: 2026년 AI가 바꾸는 일상, 화성 탐사 최신 근황..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>스타일 A</label>
+              <select id="styleA"></select>
+            </div>
+            <div class="form-group">
+              <label>스타일 B</label>
+              <select id="styleB"></select>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-full" id="btnGenScenario" onclick="genScenarios()">
+            🎭 시나리오 생성 (2개 비교)
+          </button>
+        </div>
+      </div>
+
+      <!-- Output Settings -->
+      <div class="card">
+        <div class="card-hd"><span class="card-title">📐 출력 설정</span></div>
+        <div class="card-bd">
+          <div class="form-group">
+            <label>플랫폼 프리셋</label>
+            <select id="outputPreset" onchange="updatePresetInfo()"></select>
+          </div>
+          <div id="presetInfo" style="font-size:9px;color:var(--text3);margin-top:2px"></div>
+          <div class="form-row" style="margin-top:6px">
+            <div class="form-group">
+              <label>품질</label>
+              <select id="qualityPreset"></select>
+            </div>
+            <div class="form-group">
+              <label>AI 모델</label>
+              <select id="aiModel">
+                <option value="framepack">FramePack (빠름)</option>
+                <option value="wan2.1">Wan2.1 14B (최고품질)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video Settings -->
+      <div class="card">
+        <div class="card-hd"><span class="card-title">🎙️ 음성 & BGM</span></div>
+        <div class="card-bd">
+          <div class="form-group">
+            <label>TTS 음성</label>
+            <select id="voiceSelect"></select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>속도</label>
+              <select id="ttsSpeed">
+                <option value="very_slow">매우 느림</option>
+                <option value="slow">느림</option>
+                <option value="normal" selected>보통</option>
+                <option value="fast">빠름</option>
+                <option value="very_fast">매우 빠름</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>BGM 분위기</label>
+              <select id="bgmMood"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subtitle Settings -->
+      <div class="card">
+        <div class="card-hd"><span class="card-title">📄 자막 설정</span></div>
+        <div class="card-bd">
+          <div class="form-group">
+            <label>스타일 프리셋</label>
+            <select id="subtitleStyle"></select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>위치</label>
+              <select id="subtitlePos">
+                <option value="top">상단</option>
+                <option value="center">중앙</option>
+                <option value="bottom" selected>하단 (기본)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>크기</label>
+              <select id="subtitleSize">
+                <option value="24">소 (24px)</option>
+                <option value="36" selected>중 (36px)</option>
+                <option value="48">대 (48px)</option>
+                <option value="64">특대 (64px)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>글자색</label>
+              <select id="subtitleColor">
+                <option value="auto">🤖 Auto (가독성 자동)</option>
+                <option value="white">⬜ 흰색</option>
+                <option value="black">⬛ 검정</option>
+                <option value="yellow">🟨 노란색</option>
+                <option value="custom">🎨 커스텀</option>
+              </select>
+            </div>
+            <div class="form-group hidden" id="customColorWrap">
+              <label>색상 선택</label>
+              <input type="color" id="customColor" value="#FFFFFF">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Advanced -->
+      <div class="card">
+        <div class="card-hd"><span class="card-title">⚡ 고급 옵션</span></div>
+        <div class="card-bd">
+          <div class="form-row">
+            <div class="form-group">
+              <label>장면 수</label>
+              <input type="number" id="numScenes" value="10" min="3" max="20">
+            </div>
+            <div class="form-group">
+              <label>총 길이 (초)</label>
+              <input type="number" id="totalDuration" value="40" min="10" max="120">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>GPU 가속</label>
+            <select id="useGpu">
+              <option value="true" selected>사용 (NVENC)</option>
+              <option value="false">미사용 (CPU)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEGACY TAB -->
+    <div class="tab-content" id="tabLegacy">
+      <div class="card accent">
+        <div class="card-hd"><span class="card-title">📺 간편 영상 제작</span></div>
+        <div class="card-bd">
+          <div class="form-group">
+            <label>주제 (한 줄에 하나씩, 최대 10개)</label>
+            <textarea id="legacyTopics" rows="5" placeholder="ChatGPT 5.0 사용 후기&#10;RTX 5090 성능&#10;2026 투자 핫 종목"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>음성</label>
+              <select id="legacyVoice"></select>
+            </div>
+            <div class="form-group">
+              <label>BGM</label>
+              <select id="legacyBgm"></select>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-full" id="btnLegacy" onclick="startLegacy()">
+            ⚡ 빠른 생성 시작
+          </button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><span class="card-title">🔥 트렌드 주제</span></div>
+        <div class="card-bd" id="trendList" style="max-height:300px;overflow-y:auto">
+          <div class="empty-state"><div class="es-icon">📊</div>로딩 중...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY TAB -->
+    <div class="tab-content" id="tabHistory">
+      <div class="flex-between" style="margin-bottom:6px">
+        <span style="font-size:11px;font-weight:700;color:var(--text2)">📁 작업 히스토리</span>
+        <button class="btn btn-sm btn-danger" onclick="deleteAllJobs()">🗑 전체 삭제</button>
+      </div>
+      <div id="jobList">
+        <div class="empty-state"><div class="es-icon">📂</div>아직 작업이 없습니다</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════ CENTER PANEL ═══════ -->
+  <section class="center-panel">
+    <!-- Scenario Comparison -->
+    <div id="scenarioSection" class="hidden">
+      <div class="card accent">
+        <div class="card-hd">
+          <span class="card-title">🎭 시나리오 비교 — 하나를 선택하세요</span>
+          <span class="tag" id="scenarioModelTag">LLM</span>
+        </div>
+        <div class="card-bd">
+          <div class="scenario-compare" id="scenarioCompare"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scene Editor -->
+    <div id="sceneSection" class="hidden">
+      <div class="card">
+        <div class="card-hd">
+          <span class="card-title">🎞️ 장면 편집 (<span id="sceneCount">0</span>개)</span>
+          <div class="btn-group">
+            <button class="btn btn-sm btn-secondary" onclick="toggleSceneDetails()">📋 상세보기</button>
+            <button class="btn btn-sm btn-green" onclick="startGeneration()">🚀 영상 생성 시작</button>
+          </div>
+        </div>
+        <div class="card-bd">
+          <div class="scene-list" id="sceneList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Panel -->
+    <div id="progressPanel" class="progress-panel">
+      <div class="prog-header">
+        <span class="prog-title"><span class="spinner"></span> 영상 생성 중</span>
+        <div>
+          <span class="prog-eta" id="progEta">예상 시간 계산 중...</span>
+        </div>
+      </div>
+      <div class="prog-bar-wrap"><div class="prog-bar" id="progBar"></div></div>
+      <div class="prog-body" id="progBody">
+        <div style="text-align:center;padding:10px;color:var(--text3);font-size:10px">
+          장면 생성을 준비하고 있습니다...
+        </div>
+      </div>
+      <div class="prog-gpu" id="progGpu">
+        <span>GPU: <span id="pgGpuName">-</span></span>
+        <span>VRAM: <span id="pgVram">-</span></span>
+        <span>온도: <span id="pgTemp">-</span></span>
+        <span>진행: <span id="pgPct">0%</span></span>
+      </div>
+    </div>
+
+    <!-- Output Gallery -->
+    <div id="gallerySection">
+      <div class="card">
+        <div class="card-hd">
+          <span class="card-title">🎬 완성 영상</span>
+          <span class="tag green" id="galleryCount">0개</span>
+        </div>
+        <div class="card-bd">
+          <div class="gallery" id="gallery">
+            <div class="empty-state">
+              <div class="es-icon">🎬</div>
+              아직 생성된 영상이 없습니다<br>
+              <span style="font-size:9px;color:var(--text3)">주제를 입력하고 시나리오를 생성해보세요</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty welcome state -->
+    <div id="welcomeState" class="card" style="flex:1;display:flex;align-items:center;justify-content:center;min-height:300px">
+      <div class="empty-state">
+        <div class="es-icon" style="font-size:42px">🎬</div>
+        <div style="font-size:16px;font-weight:700;margin:10px 0;color:var(--text1)">AI Shorts Studio PRO v1.0.0</div>
+        <div style="font-size:9px;color:var(--text3);margin-bottom:6px">© chally.choi</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.8">
+          ComfyUI + FramePack/Wan2.1 AI 영상 생성 엔진<br>
+          시나리오 → 장면 분석 → 영문 프롬프트 → AI 영상 → 자막+BGM → MP4<br><br>
+          <span class="tag">10 장면</span>
+          <span class="tag purple">40초</span>
+          <span class="tag orange">RTX 3090</span>
+          <span class="tag green">NVENC</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ RIGHT PANEL ═══════ -->
+  <aside class="right-panel">
+    <!-- System Monitor -->
+    <div class="card">
+      <div class="card-hd"><span class="card-title">📊 시스템 모니터</span></div>
+      <div class="card-bd" style="font-size:10px;font-family:'JetBrains Mono',monospace">
+        <div class="flex-between mb-4"><span class="text-muted">CPU</span><span id="sysC">-</span></div>
+        <div class="flex-between mb-4"><span class="text-muted">RAM</span><span id="sysR">-</span></div>
+        <div class="flex-between mb-4"><span class="text-muted">GPU</span><span id="sysG">-</span></div>
+        <div class="flex-between mb-4"><span class="text-muted">VRAM</span><span id="sysV">-</span></div>
+        <div class="flex-between mb-4"><span class="text-muted">온도</span><span id="sysT">-</span></div>
+        <div class="flex-between mb-4"><span class="text-muted">전력</span><span id="sysP">-</span></div>
+        <div class="flex-between mb-4"><span class="text-muted">디스크</span><span id="sysD">-</span></div>
+        <div class="flex-between mb-4"><span class="text-muted">WSL2</span><span id="sysW">-</span></div>
+        <div class="flex-between"><span class="text-muted">ComfyUI</span><span id="sysCU">-</span></div>
+      </div>
+    </div>
+
+    <!-- LLM Info -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">🤖 AI 엔진</span>
+        <button class="btn btn-sm btn-secondary" onclick="refreshModels()">🔄</button>
+      </div>
+      <div class="card-bd">
+        <div class="form-group">
+          <label>Ollama 모델</label>
+          <select id="modelSelect" onchange="switchModel()"></select>
+        </div>
+        <div id="modelInfo" style="font-size:9px;color:var(--text3)"></div>
+      </div>
+    </div>
+
+    <!-- Active Jobs / Pipeline Progress -->
+    <div class="card" id="activeJobsCard">
+      <div class="card-hd">
+        <span class="card-title">⚡ 작업 진행</span>
+        <span class="tag" id="jobStatusTag" style="display:none">진행중</span>
+      </div>
+      <div class="card-bd" id="activeJobsBody">
+        <div class="empty-state" style="padding:10px"><div class="es-icon">✨</div>대기 중</div>
+      </div>
+    </div>
+
+    <!-- ComfyUI Log Console -->
+    <div class="card" id="comfyLogCard">
+      <div class="card-hd">
+        <span class="card-title">🎨 ComfyUI 로그</span>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-sm btn-secondary" onclick="clearComfyLogs()" title="로그 지우기">🗑</button>
+          <button class="btn btn-sm btn-secondary" onclick="fetchComfyLogs()" title="새로고침">🔄</button>
+        </div>
+      </div>
+      <div class="card-bd" style="padding:0">
+        <div id="comfyLogConsole" style="
+          height:200px;overflow-y:auto;padding:6px 8px;
+          font-family:'JetBrains Mono',monospace;font-size:9.5px;line-height:1.6;
+          background:var(--void);border-radius:0 0 var(--radius) var(--radius);
+        ">
+          <div class="comfy-log-line" style="color:var(--text3)">ComfyUI 로그가 여기에 표시됩니다...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="card">
+      <div class="card-hd"><span class="card-title">🔗 빠른 링크</span></div>
+      <div class="card-bd" style="display:flex;flex-direction:column;gap:3px">
+        <a href="/api/health" target="_blank" style="font-size:10px">🩺 Health Check</a>
+        <a href="/api/version" target="_blank" style="font-size:10px">📦 Version Info</a>
+        <a href="/api/gpu" target="_blank" style="font-size:10px">🖥️ GPU Status</a>
+        <a href="/api/comfyui/status" target="_blank" style="font-size:10px">🎨 ComfyUI Status</a>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<!-- ═══════ SETTINGS MODAL ═══════ -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-hd">
+      <h3>⚙️ 설정</h3>
+      <button class="modal-close" onclick="closeSettings()">&times;</button>
+    </div>
+    <div class="modal-bd">
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-stab="general">일반</button>
+        <button class="modal-tab" data-stab="social">소셜 미디어</button>
+        <button class="modal-tab" data-stab="comfyui">ComfyUI</button>
+        <button class="modal-tab" data-stab="update">업데이트</button>
+        <button class="modal-tab" data-stab="help">도움말</button>
+      </div>
+
+      <!-- General Settings -->
+      <div class="settings-section active" id="stabGeneral">
+        <h4>👤 사용자 프로필</h4>
+        <div class="settings-row">
+          <label>닉네임</label>
+          <div class="input-wrap">
+            <input type="text" id="setUsername" placeholder="나의 채널명">
+          </div>
+        </div>
+        <div class="settings-row">
+          <label>아바타 URL</label>
+          <div class="input-wrap">
+            <input type="text" id="setAvatar" placeholder="https://example.com/avatar.png">
+            <div class="settings-hint">프로필 이미지 URL (선택사항)</div>
+          </div>
+        </div>
+        <h4>🎬 기본 영상 설정</h4>
+        <div class="settings-row">
+          <label>기본 프리셋</label>
+          <div class="input-wrap"><select id="setDefaultPreset"></select></div>
+        </div>
+        <div class="settings-row">
+          <label>기본 음성</label>
+          <div class="input-wrap"><select id="setDefaultVoice"></select></div>
+        </div>
+        <div class="settings-row">
+          <label>기본 품질</label>
+          <div class="input-wrap">
+            <select id="setDefaultQuality">
+              <option value="balance">밸런스 (480p+업스케일)</option>
+              <option value="ultra">최고품질 (720p 직접)</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:12px;text-align:right">
+          <button class="btn btn-primary" onclick="saveSettings()">💾 저장</button>
+        </div>
+      </div>
+
+      <!-- Social Media Settings -->
+      <div class="settings-section" id="stabSocial">
+        <h4>📺 YouTube API</h4>
+        <div class="settings-row">
+          <label>API Key</label>
+          <div class="input-wrap">
+            <input type="text" id="setYtApiKey" placeholder="AIza...">
+            <div class="settings-hint">YouTube Data API v3 키 (<a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a>)</div>
+          </div>
+        </div>
+        <div class="settings-row">
+          <label>OAuth Client</label>
+          <div class="input-wrap">
+            <input type="text" id="setYtOauth" placeholder="Client ID">
+            <div class="settings-hint">동영상 업로드에 필요한 OAuth 2.0 클라이언트 ID</div>
+          </div>
+        </div>
+        <h4>📱 Instagram</h4>
+        <div class="settings-row">
+          <label>Access Token</label>
+          <div class="input-wrap">
+            <input type="text" id="setIgToken" placeholder="IGQ...">
+            <div class="settings-hint">Instagram Graph API 액세스 토큰</div>
+          </div>
+        </div>
+        <h4>🐦 X (Twitter)</h4>
+        <div class="settings-row">
+          <label>Bearer Token</label>
+          <div class="input-wrap">
+            <input type="text" id="setXToken" placeholder="AAAA...">
+            <div class="settings-hint">X API v2 Bearer Token</div>
+          </div>
+        </div>
+        <h4>🎵 TikTok</h4>
+        <div class="settings-row">
+          <label>Access Token</label>
+          <div class="input-wrap">
+            <input type="text" id="setTikToken" placeholder="">
+            <div class="settings-hint">TikTok Content Posting API 토큰</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;text-align:right">
+          <button class="btn btn-primary" onclick="saveSocialSettings()">💾 저장</button>
+        </div>
+      </div>
+
+      <!-- ComfyUI Settings -->
+      <div class="settings-section" id="stabComfyui">
+        <h4>🎨 ComfyUI 연결</h4>
+        <div class="settings-row">
+          <label>ComfyUI Host</label>
+          <div class="input-wrap">
+            <input type="text" id="setComfyHost" placeholder="http://127.0.0.1:8188">
+            <div class="settings-hint">로컬 ComfyUI 서버 주소 (기본: http://127.0.0.1:8188)</div>
+          </div>
+        </div>
+        <div class="settings-row">
+          <label>상태</label>
+          <div class="input-wrap">
+            <span id="comfyStatus" style="font-size:11px">확인 중...</span>
+          </div>
+        </div>
+        <h4>🤖 Ollama 설정</h4>
+        <div class="settings-row">
+          <label>Ollama Host</label>
+          <div class="input-wrap">
+            <input type="text" id="setOllamaHost" placeholder="http://localhost:11434">
+          </div>
+        </div>
+        <div class="settings-row">
+          <label>기본 모델</label>
+          <div class="input-wrap">
+            <input type="text" id="setOllamaModel" placeholder="exaone3.5:32b">
+          </div>
+        </div>
+        <div style="margin-top:12px;text-align:right">
+          <button class="btn btn-secondary" onclick="checkComfyUI()">🔍 연결 테스트</button>
+        </div>
+      </div>
+
+      <!-- Update Settings -->
+      <div class="settings-section" id="stabUpdate">
+        <h4>🔄 소프트웨어 업데이트</h4>
+        <div style="padding:10px;background:var(--deep);border-radius:8px;margin-bottom:10px">
+          <div class="flex-between">
+            <span style="font-size:11px">현재 버전</span>
+            <span class="tag green" id="setCurrentVer">v1.0.0</span>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="checkUpdate()">🔍 업데이트 확인</button>
+        <div id="updateResult" style="margin-top:10px;font-size:11px;color:var(--text2)"></div>
+        <div class="divider"></div>
+        <h4>📋 변경사항 (v1.0.0)</h4>
+        <div style="font-size:10px;color:var(--text2);line-height:1.6">
+          • ComfyUI + FramePack/Wan2.1 AI 영상 생성 엔진 통합<br>
+          • 시나리오 2개 비교 후 선택 기능<br>
+          • 장면별 상세 설명 (구도/카메라/조명/행동/배경/분위기)<br>
+          • 한국어 → 영문 프롬프트 자동 변환<br>
+          • 플랫폼별 출력 포맷 프리셋 (유튜브/인스타/틱톡/X)<br>
+          • 자막 스타일 커스터마이즈 + Auto 모드<br>
+          • 실시간 ETA 표시 및 GPU 모니터링<br>
+          • <b>ComfyUI 실시간 로그 콘솔 (UI 우측)</b><br>
+          • <b>start.sh 통합 실행 (ComfyUI + Flask 한방)</b><br>
+          • <b>동적 체크포인트 감지 (하드코딩 제거)</b><br>
+          • 영상 개별/전체 삭제 기능<br>
+          • 설정 패널 (소셜 API, 프로필, ComfyUI)<br>
+          • 480p 생성 → AI 업스케일 / 720p 직접 생성 선택<br>
+          • <b>© chally.choi</b>
+        </div>
+      </div>
+
+      <!-- Help -->
+      <div class="settings-section" id="stabHelp">
+        <h4>📖 사용 가이드</h4>
+        <div style="font-size:10.5px;color:var(--text2);line-height:1.7">
+          <b>1. AI 영상 제작</b><br>
+          &nbsp;&nbsp;① 주제 입력 → 시나리오 스타일 2개 선택<br>
+          &nbsp;&nbsp;② "시나리오 생성" 클릭 → 2가지 시나리오 비교<br>
+          &nbsp;&nbsp;③ 원하는 시나리오 선택 → 장면별 편집 가능<br>
+          &nbsp;&nbsp;④ 출력 포맷/품질/자막 설정 확인<br>
+          &nbsp;&nbsp;⑤ "영상 생성 시작" → 실시간 진행률 확인<br>
+          &nbsp;&nbsp;⑥ 우측 "작업 진행" + "ComfyUI 로그" 패널에서 모니터링<br><br>
+          <b>2. 간편 모드 (슬라이드쇼)</b><br>
+          &nbsp;&nbsp;① 주제를 한 줄에 하나씩 입력<br>
+          &nbsp;&nbsp;② "빠른 생성 시작" 클릭<br>
+          &nbsp;&nbsp;③ 슬라이드쇼+TTS 방식으로 빠르게 생성<br><br>
+          <b>3. ComfyUI 설치 (고품질 AI 영상 필수)</b><br>
+          &nbsp;&nbsp;① WSL2에서: <code style="background:var(--deep);padding:1px 4px;border-radius:3px">./install.sh comfyui</code><br>
+          &nbsp;&nbsp;② 자동으로 ComfyUI + FramePack + Wan2.1 설치<br>
+          &nbsp;&nbsp;③ <b>체크포인트 모델 필수!</b> ComfyUI/models/checkpoints/ 에 SDXL 등 모델 파일을 넣어야 이미지 생성 가능<br>
+          &nbsp;&nbsp;④ start.sh가 ComfyUI도 함께 실행합니다<br><br>
+          <b>4. 핫키</b><br>
+          &nbsp;&nbsp;Ctrl+Enter: 생성 시작 / Esc: 모달 닫기
+        </div>
+        <div class="divider"></div>
+        <h4>❓ FAQ</h4>
+        <div style="font-size:10.5px;color:var(--text2);line-height:1.7">
+          <b>Q: ComfyUI 없이도 사용할 수 있나요?</b><br>
+          A: 네! ComfyUI 없이는 슬라이드쇼 방식(v6 폴백)으로 영상이 생성됩니다. AI 영상을 원하면 ComfyUI를 설치하세요.<br><br>
+          <b>Q: "체크포인트 없음" 에러가 나요</b><br>
+          A: ComfyUI/models/checkpoints/ 폴더에 SDXL 등의 체크포인트 모델 파일(.safetensors)을 넣어야 합니다. 설정 > ComfyUI 탭에서 연결 테스트 시 체크포인트 목록이 표시됩니다.<br><br>
+          <b>Q: 영상 하나 만드는데 얼마나 걸리나요?</b><br>
+          A: RTX 3090 기준 — 밸런스 모드: ~40분 / 최고품질: ~100분 (10장면 기준)<br><br>
+          <b>Q: 어떤 GPU가 필요한가요?</b><br>
+          A: 최소 12GB VRAM (RTX 3060 이상), 권장 24GB (RTX 3090/4090)
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ JAVASCRIPT ═══════ -->
+<script>
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+const S = {
+  socket: null,
+  scenarios: null,
+  selectedScenario: null,
+  selectedScenes: [],
+  currentJobId: null,
+  showSceneDetails: false,
+  presets: {},
+  subtitleStyles: {},
+  subtitleColors: {},
+  qualityPresets: {},
+  scenarioStyles: {},
+  bgmMoods: {},
+  voices: [],
+};
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  initSocket();
+  initTabs();
+  initModalTabs();
+  loadPresets();
+  loadVoices();
+  loadJobs();
+  loadTrends();
+  initKeyboard();
+  setInterval(refreshMetrics, 5000);
+  loadSettings();
+  fetchComfyLogs();
+
+  // color picker toggle
+  document.getElementById('subtitleColor').addEventListener('change', e => {
+    document.getElementById('customColorWrap').classList.toggle('hidden', e.target.value !== 'custom');
+  });
+});
+
+// ═══════════════════════════════════════════
+//  SOCKET.IO
+// ═══════════════════════════════════════════
+function initSocket() {
+  S.socket = io({ transports: ['websocket', 'polling'] });
+
+  S.socket.on('connected', data => {
+    setDot('dotOllama', data.ollama);
+    document.getElementById('lblOllama').textContent = data.ollama ? 'Ollama' : 'Ollama ✗';
+    setDot('dotComfy', data.comfyui);
+    document.getElementById('lblComfy').textContent = data.comfyui ? 'ComfyUI' : 'ComfyUI ✗';
+    setDot('dotGpu', !!data.gpu && data.gpu !== 'N/A');
+    document.getElementById('lblGpu').textContent = data.gpu || 'GPU';
+    document.getElementById('verLabel').textContent = 'v' + data.version;
+  });
+
+  S.socket.on('job_update', data => {
+    updateJobInList(data);
+    if (data.id === S.currentJobId) {
+      updateProgress(data);
+      updateActiveJobPanel(data);
+    }
+  });
+
+  S.socket.on('pipeline_step', data => {
+    if (data.job_id === S.currentJobId) {
+      updateProgressStep(data);
+      updateActiveJobPanel(data);
+    }
+  });
+
+  S.socket.on('eta_update', data => {
+    if (data.job_id === S.currentJobId) {
+      updateETA(data);
+    }
+  });
+
+  S.socket.on('scenarios_ready', data => {
+    if (data.job_id === S.currentJobId) {
+      displayScenarios(data.scenarios);
+    }
+  });
+
+  S.socket.on('job_completed', data => {
+    if (data.job_id === S.currentJobId) {
+      onJobComplete(data);
+    }
+    loadJobs();
+  });
+
+  S.socket.on('metrics', data => {
+    renderMetrics(data);
+  });
+
+  S.socket.on('comfyui_log', data => {
+    appendComfyLog(data);
+  });
+
+  S.socket.on('comfyui_status', data => {
+    if (data.success) {
+      setDot('dotComfy', true);
+      document.getElementById('lblComfy').textContent = 'ComfyUI';
+    }
+  });
+}
+
+function setDot(id, ok) {
+  const el = document.getElementById(id);
+  el.className = 'dot ' + (ok ? 'ok' : 'err');
+}
+
+// ═══════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════
+function initTabs() {
+  document.querySelectorAll('.nav-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      const target = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+      if (target) target.classList.add('active');
+    });
+  });
+}
+
+function initModalTabs() {
+  document.querySelectorAll('.modal-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.modal-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+      const target = document.getElementById('stab' + btn.dataset.stab.charAt(0).toUpperCase() + btn.dataset.stab.slice(1));
+      if (target) target.classList.add('active');
+    });
+  });
+}
+
+// ═══════════════════════════════════════════
+//  LOAD PRESETS
+// ═══════════════════════════════════════════
+async function loadPresets() {
+  try {
+    const [presets, subStyles, quality, scStyles, moods] = await Promise.all([
+      fetch('/api/output-presets').then(r => r.json()),
+      fetch('/api/subtitle-styles').then(r => r.json()),
+      fetch('/api/quality-presets').then(r => r.json()),
+      fetch('/api/scenario-styles').then(r => r.json()),
+      fetch('/api/bgm-moods').then(r => r.json()),
+    ]);
+
+    S.presets = presets.presets || {};
+    S.subtitleStyles = subStyles.styles || {};
+    S.subtitleColors = subStyles.colors || {};
+    S.qualityPresets = quality.presets || {};
+    S.scenarioStyles = scStyles.styles || {};
+    S.bgmMoods = moods.moods || {};
+
+    // Populate output presets
+    const op = document.getElementById('outputPreset');
+    op.innerHTML = '';
+    for (const [k, v] of Object.entries(S.presets)) {
+      op.innerHTML += `<option value="${k}">${v.icon} ${v.name} (${v.ratio})</option>`;
+    }
+    // Also for settings
+    const sp = document.getElementById('setDefaultPreset');
+    if (sp) { sp.innerHTML = op.innerHTML; }
+
+    updatePresetInfo();
+
+    // Quality presets
+    const qp = document.getElementById('qualityPreset');
+    qp.innerHTML = '';
+    for (const [k, v] of Object.entries(S.qualityPresets)) {
+      qp.innerHTML += `<option value="${k}">${v.icon} ${v.name}</option>`;
+    }
+
+    // Subtitle styles
+    const ss = document.getElementById('subtitleStyle');
+    ss.innerHTML = '';
+    for (const [k, v] of Object.entries(S.subtitleStyles)) {
+      ss.innerHTML += `<option value="${k}">${v.name} — ${v.desc}</option>`;
+    }
+
+    // Scenario styles
+    const sa = document.getElementById('styleA');
+    const sb = document.getElementById('styleB');
+    sa.innerHTML = ''; sb.innerHTML = '';
+    for (const [k, v] of Object.entries(S.scenarioStyles)) {
+      sa.innerHTML += `<option value="${k}" ${k==='emotional'?'selected':''}>${v.icon} ${v.name}</option>`;
+      sb.innerHTML += `<option value="${k}" ${k==='humor'?'selected':''}>${v.icon} ${v.name}</option>`;
+    }
+
+    // BGM moods
+    const bm = document.getElementById('bgmMood');
+    const lb = document.getElementById('legacyBgm');
+    bm.innerHTML = ''; if(lb) lb.innerHTML = '';
+    for (const [k, v] of Object.entries(S.bgmMoods)) {
+      const opt = `<option value="${k}">${v.icon} ${v.name}</option>`;
+      bm.innerHTML += opt;
+      if (lb) lb.innerHTML += opt;
+    }
+  } catch (e) {
+    console.error('Failed to load presets:', e);
+  }
+}
+
+async function loadVoices() {
+  try {
+    const data = await fetch('/api/voices').then(r => r.json());
+    S.voices = data.voices || [];
+    const selects = ['voiceSelect', 'legacyVoice', 'setDefaultVoice'];
+    selects.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = '';
+      S.voices.forEach(v => {
+        el.innerHTML += `<option value="${v.id}">${v.name}</option>`;
+      });
+    });
+  } catch (e) {
+    console.error('Failed to load voices:', e);
+  }
+}
+
+function updatePresetInfo() {
+  const sel = document.getElementById('outputPreset').value;
+  const p = S.presets[sel];
+  if (p) {
+    document.getElementById('presetInfo').textContent =
+      `${p.width}×${p.height} | ${p.fps}fps | ${p.ratio}` +
+      (p.max_duration > 0 ? ` | 최대 ${p.max_duration}초` : '');
+  }
+}
+
+// ═══════════════════════════════════════════
+//  SCENARIO GENERATION
+// ═══════════════════════════════════════════
+async function genScenarios() {
+  const topic = document.getElementById('topicInput').value.trim();
+  if (!topic) return alert('주제를 입력해주세요');
+
+  const btn = document.getElementById('btnGenScenario');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 시나리오 생성 중...';
+
+  document.getElementById('welcomeState').classList.add('hidden');
+  document.getElementById('scenarioSection').classList.remove('hidden');
+  document.getElementById('scenarioCompare').innerHTML =
+    '<div class="empty-state" style="grid-column:1/-1"><span class="spinner"></span> AI가 2가지 시나리오를 작성하고 있습니다...</div>';
+
+  try {
+    const resp = await fetch('/api/scenarios', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic,
+        num_scenes: parseInt(document.getElementById('numScenes').value) || 10,
+        duration: parseInt(document.getElementById('totalDuration').value) || 40,
+        style_a: document.getElementById('styleA').value,
+        style_b: document.getElementById('styleB').value,
+      }),
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    displayScenarios(data.scenarios);
+  } catch (e) {
+    document.getElementById('scenarioCompare').innerHTML =
+      `<div class="empty-state text-red" style="grid-column:1/-1">❌ ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🎭 시나리오 생성 (2개 비교)';
+  }
+}
+
+function displayScenarios(scenarios) {
+  S.scenarios = scenarios;
+  const container = document.getElementById('scenarioCompare');
+
+  const modelUsed = scenarios.scenario_a?.model_used || 'template';
+  document.getElementById('scenarioModelTag').textContent = modelUsed === 'template' ? '템플릿' : modelUsed;
+
+  container.innerHTML = '';
+
+  ['a', 'b'].forEach(key => {
+    const sc = scenarios[`scenario_${key}`];
+    if (!sc) return;
+
+    const preview = sc.scenes.slice(0, 3).map(s => s.narration).join(' ').substring(0, 150);
+
+    container.innerHTML += `
+      <div class="scenario-card" id="sc-${key}" onclick="selectScenario('${key}')">
+        <span class="sc-badge">시나리오 ${key.toUpperCase()}</span>
+        <div class="sc-style">${sc.style_icon} ${sc.style_name}</div>
+        <div class="sc-preview">${preview}...</div>
+        <div style="margin-top:6px;display:flex;gap:4px">
+          <span class="tag">${sc.scene_count}장면</span>
+          <span class="tag purple">${sc.model_used === 'template' ? '템플릿' : 'AI'}</span>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function selectScenario(key) {
+  S.selectedScenario = key;
+
+  document.querySelectorAll('.scenario-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById(`sc-${key}`).classList.add('selected');
+
+  const sc = S.scenarios[`scenario_${key}`];
+  S.selectedScenes = JSON.parse(JSON.stringify(sc.scenes)); // deep copy
+
+  document.getElementById('sceneSection').classList.remove('hidden');
+  renderScenes();
+}
+
+// ═══════════════════════════════════════════
+//  SCENE EDITOR
+// ═══════════════════════════════════════════
+function renderScenes() {
+  const list = document.getElementById('sceneList');
+  const count = document.getElementById('sceneCount');
+  count.textContent = S.selectedScenes.length;
+
+  list.innerHTML = '';
+  S.selectedScenes.forEach((scene, i) => {
+    const dur = (parseInt(document.getElementById('totalDuration').value) || 40) / S.selectedScenes.length;
+    const details = S.showSceneDetails ? `
+      <div class="si-details">
+        <span>📐 ${scene.composition || '-'}</span>
+        <span>🎥 ${scene.camera || '-'}</span>
+        <span>💡 ${scene.lighting || '-'}</span>
+        <span>🎭 ${scene.action || '-'}</span>
+        <span>🏔️ ${scene.background || '-'}</span>
+        <span>✨ ${scene.mood || '-'}</span>
+      </div>
+      <textarea onchange="updateScene(${i},'narration',this.value)"
+        placeholder="나레이션 편집">${scene.narration || ''}</textarea>
+    ` : '';
+
+    list.innerHTML += `
+      <div class="scene-item">
+        <div class="si-head">
+          <span class="si-num">SCENE ${scene.scene_num || i + 1}</span>
+          <span class="si-dur">${dur.toFixed(1)}s</span>
+        </div>
+        <div class="si-narr">${scene.narration || '(비어있음)'}</div>
+        ${details}
+      </div>
+    `;
+  });
+}
+
+function toggleSceneDetails() {
+  S.showSceneDetails = !S.showSceneDetails;
+  renderScenes();
+}
+
+function updateScene(idx, field, value) {
+  if (S.selectedScenes[idx]) {
+    S.selectedScenes[idx][field] = value;
+  }
+}
+
+// ═══════════════════════════════════════════
+//  START GENERATION
+// ═══════════════════════════════════════════
+async function startGeneration() {
+  if (!S.selectedScenes.length) return alert('시나리오를 먼저 선택해주세요');
+
+  const topic = document.getElementById('topicInput').value.trim();
+  const options = gatherOptions();
+
+  document.getElementById('progressPanel').classList.add('active');
+  document.getElementById('progBar').style.width = '0%';
+  document.getElementById('progEta').textContent = '예상 시간 계산 중...';
+  initProgressBody(S.selectedScenes.length);
+
+  try {
+    const resp = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic,
+        mode: 'v7',
+        options: {
+          ...options,
+          auto_select: S.selectedScenario,
+          style_a: document.getElementById('styleA').value,
+          style_b: document.getElementById('styleB').value,
+        },
+      }),
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    S.currentJobId = data.job_id;
+  } catch (e) {
+    alert('생성 실패: ' + e.message);
+    document.getElementById('progressPanel').classList.remove('active');
+  }
+}
+
+async function startLegacy() {
+  const text = document.getElementById('legacyTopics').value.trim();
+  if (!text) return alert('주제를 입력해주세요');
+
+  const topics = text.split('\n').map(l => l.trim()).filter(Boolean).slice(0, 10);
+  if (!topics.length) return alert('유효한 주제가 없습니다');
+
+  const btn = document.getElementById('btnLegacy');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 생성 중...';
+
+  document.getElementById('progressPanel').classList.add('active');
+
+  try {
+    const resp = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topics,
+        mode: 'legacy',
+        options: {
+          voice: document.getElementById('legacyVoice')?.value || 'ko-KR-SunHiNeural',
+          bgm_mood: document.getElementById('legacyBgm')?.value || 'none',
+          output_preset: 'youtube_shorts',
+          use_gpu: true,
+        },
+      }),
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    S.currentJobId = data.job_id;
+  } catch (e) {
+    alert('생성 실패: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '⚡ 빠른 생성 시작';
+  }
+}
+
+function gatherOptions() {
+  const colorMode = document.getElementById('subtitleColor').value;
+  return {
+    num_scenes: parseInt(document.getElementById('numScenes').value) || 10,
+    duration: parseInt(document.getElementById('totalDuration').value) || 40,
+    output_preset: document.getElementById('outputPreset').value,
+    quality: document.getElementById('qualityPreset').value,
+    ai_model: document.getElementById('aiModel').value,
+    voice: document.getElementById('voiceSelect').value,
+    tts_speed: document.getElementById('ttsSpeed').value,
+    bgm_mood: document.getElementById('bgmMood').value,
+    use_gpu: document.getElementById('useGpu').value === 'true',
+    subtitle: {
+      style: document.getElementById('subtitleStyle').value,
+      position: document.getElementById('subtitlePos').value,
+      font_size: parseInt(document.getElementById('subtitleSize').value) || 36,
+      color_mode: colorMode,
+      color: colorMode === 'custom' ? document.getElementById('customColor').value : '#FFFFFF',
+    },
+    scene_duration: (parseInt(document.getElementById('totalDuration').value) || 40) /
+      (parseInt(document.getElementById('numScenes').value) || 10),
+  };
+}
+
+// ═══════════════════════════════════════════
+//  PROGRESS
+// ═══════════════════════════════════════════
+function initProgressBody(numScenes) {
+  const body = document.getElementById('progBody');
+  body.innerHTML = '';
+  for (let i = 0; i < numScenes; i++) {
+    body.innerHTML += `
+      <div class="prog-scene" id="ps-${i}">
+        <span class="ps-num">Scene ${i + 1}</span>
+        <span class="ps-status">대기</span>
+        <span class="ps-time">-</span>
+      </div>
+    `;
+  }
+}
+
+function updateProgress(data) {
+  const pct = data.progress || 0;
+  document.getElementById('progBar').style.width = pct + '%';
+  document.getElementById('pgPct').textContent = pct + '%';
+
+  if (data.current_step) {
+    // Update active scene in progress list
+    const match = data.current_step.match(/Scene (\d+)/);
+    if (match) {
+      const idx = parseInt(match[1]) - 1;
+      document.querySelectorAll('.prog-scene').forEach((el, i) => {
+        el.classList.remove('active', 'done');
+        if (i < idx) el.classList.add('done');
+        else if (i === idx) el.classList.add('active');
+      });
+    }
+  }
+}
+
+function updateProgressStep(data) {
+  const pct = data.progress || 0;
+  document.getElementById('progBar').style.width = pct + '%';
+  document.getElementById('pgPct').textContent = pct + '%';
+}
+
+function updateETA(data) {
+  const eta = document.getElementById('progEta');
+  eta.textContent = `${data.eta_formatted} 남음 (완료 ~${data.estimated_completion})`;
+
+  // Update scene progress
+  for (let i = 0; i < data.scenes_done; i++) {
+    const el = document.getElementById(`ps-${i}`);
+    if (el) {
+      el.classList.remove('active');
+      el.classList.add('done');
+      el.querySelector('.ps-status').textContent = '완료';
+    }
+  }
+  if (data.scenes_done < data.scenes_total) {
+    const active = document.getElementById(`ps-${data.scenes_done}`);
+    if (active) {
+      active.classList.add('active');
+      active.querySelector('.ps-status').textContent = '생성 중';
+    }
+  }
+
+  document.getElementById('pgGpuName').textContent = gpu_name || '-';
+
+  // Update right panel ETA
+  const etaEl = document.getElementById('activeJobEta');
+  if (etaEl) {
+    etaEl.innerHTML = `⏱ ${data.eta_formatted} 남음 | ${data.scenes_done}/${data.scenes_total} 장면 완료`;
+  }
+  const scenesEl = document.getElementById('activeJobScenes');
+  if (scenesEl) {
+    let html = '';
+    for (let i = 0; i < data.scenes_total; i++) {
+      const icon = i < data.scenes_done ? '✅' : (i === data.scenes_done ? '🔄' : '⏳');
+      html += `<span style="margin-right:4px">${icon} S${i+1}</span>`;
+    }
+    scenesEl.innerHTML = html;
+  }
+}
+
+let gpu_name = '-';
+
+function onJobComplete(data) {
+  document.getElementById('progressPanel').classList.remove('active');
+  S.currentJobId = null;
+  resetActiveJobPanel();
+
+  if (data.outputs && data.outputs.length > 0) {
+    renderGallery(data.outputs);
+  }
+  loadJobs();
+}
+
+// ═══════════════════════════════════════════
+//  GALLERY
+// ═══════════════════════════════════════════
+function renderGallery(outputs) {
+  const g = document.getElementById('gallery');
+  document.getElementById('galleryCount').textContent = outputs.length + '개';
+
+  g.innerHTML = '';
+  outputs.forEach(out => {
+    const previewUrl = `/api/preview/${encodeURIComponent(out.path)}`;
+    const dlUrl = `/api/download/${encodeURIComponent(out.path)}`;
+    g.innerHTML += `
+      <div class="gallery-item">
+        <video src="${previewUrl}" controls preload="metadata"></video>
+        <div class="gi-info">
+          <span class="gi-name">${out.topic || 'Video'}</span>
+          <span class="gi-size">${out.size_mb}MB</span>
+        </div>
+        <div class="gi-actions">
+          <a href="${dlUrl}" class="btn btn-sm btn-secondary" download>📥 다운로드</a>
+          <button class="btn btn-sm btn-secondary" onclick="window.open('${previewUrl}','_blank')">🔗 새 탭</button>
+          ${out.scenes ? `<span class="tag">${out.scenes}장면</span>` : ''}
+          ${out.quality ? `<span class="tag purple">${out.quality}</span>` : ''}
+        </div>
+      </div>
+    `;
+  });
+}
+
+// ═══════════════════════════════════════════
+//  JOB LIST
+// ═══════════════════════════════════════════
+async function loadJobs() {
+  try {
+    const data = await fetch('/api/jobs?limit=30').then(r => r.json());
+    renderJobList(data.jobs || []);
+  } catch (e) {
+    console.error('Failed to load jobs:', e);
+  }
+}
+
+function renderJobList(jobs) {
+  const container = document.getElementById('jobList');
+  if (!jobs.length) {
+    container.innerHTML = '<div class="empty-state"><div class="es-icon">📂</div>아직 작업이 없습니다</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  jobs.forEach(j => {
+    const statusClass = j.status || 'pending';
+    const statusText = {
+      pending: '대기', running: '진행중', completed: '완료',
+      failed: '실패', cancelled: '취소'
+    }[j.status] || j.status;
+
+    const hasOutputs = j.output_files && j.output_files.length > 0;
+    const timeAgo = j.created_at ? formatTimeAgo(j.created_at) : '';
+
+    container.innerHTML += `
+      <div class="job-item" id="job-${j.id}">
+        <div class="ji-row">
+          <span class="ji-title">${j.title || j.id}</span>
+          <span class="ji-status ${statusClass}">${statusText}</span>
+        </div>
+        <div class="ji-meta">${timeAgo} ${j.duration_sec ? `| ${j.duration_sec}s` : ''} ${j.message ? `| ${j.message}` : ''}</div>
+        ${j.status === 'running' ? `<div class="ji-progress"><div class="bar" style="width:${j.progress || 0}%"></div></div>` : ''}
+        <div class="ji-actions">
+          ${hasOutputs ? `<button class="btn btn-sm btn-green" onclick="viewJobOutputs('${j.id}')">🎬 보기</button>` : ''}
+          ${j.status === 'running' ? `<button class="btn btn-sm btn-secondary" onclick="cancelJob('${j.id}')">⏹ 취소</button>` : ''}
+          <button class="btn btn-sm btn-danger" onclick="deleteJob('${j.id}')">🗑</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function updateJobInList(job) {
+  const el = document.getElementById(`job-${job.id}`);
+  if (el) {
+    // Refresh the whole list for simplicity
+    loadJobs();
+  }
+}
+
+async function viewJobOutputs(jobId) {
+  try {
+    const data = await fetch(`/api/job/${jobId}`).then(r => r.json());
+    if (data.output_files && data.output_files.length > 0) {
+      renderGallery(data.output_files);
+    }
+  } catch (e) {
+    console.error('Failed to load job outputs:', e);
+  }
+}
+
+async function cancelJob(jobId) {
+  await fetch(`/api/job/${jobId}/cancel`, { method: 'POST' });
+  loadJobs();
+}
+
+async function deleteJob(jobId) {
+  if (!confirm('이 작업을 삭제하시겠습니까? 영상 파일도 함께 삭제됩니다.')) return;
+  try {
+    await fetch(`/api/job/${jobId}/delete`, { method: 'DELETE' });
+    loadJobs();
+  } catch (e) {
+    alert('삭제 실패: ' + e.message);
+  }
+}
+
+async function deleteAllJobs() {
+  if (!confirm('완료/실패/취소된 모든 작업을 삭제하시겠습니까?')) return;
+  try {
+    const data = await fetch('/api/jobs/delete-all', { method: 'DELETE' }).then(r => r.json());
+    alert(`${data.deleted}개 작업 삭제 완료`);
+    loadJobs();
+  } catch (e) {
+    alert('삭제 실패: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════
+//  TRENDS
+// ═══════════════════════════════════════════
+async function loadTrends() {
+  try {
+    const data = await fetch('/api/trends').then(r => r.json());
+    const container = document.getElementById('trendList');
+    container.innerHTML = '';
+    (data.trends || []).forEach(t => {
+      container.innerHTML += `
+        <div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(48,54,61,.3);cursor:pointer"
+             onclick="document.getElementById('legacyTopics').value+=this.querySelector('.tt').textContent+'\\n'">
+          <span style="font-size:12px">${t.icon}</span>
+          <span style="font-size:10px;color:var(--text3);width:16px">${t.rank}.</span>
+          <span class="tt" style="font-size:10.5px;flex:1">${t.title}</span>
+          <span style="font-size:9px;color:var(--text3)">${t.views}</span>
+          ${t.hot ? '<span class="tag red" style="font-size:7px">HOT</span>' : ''}
+        </div>
+      `;
+    });
+  } catch (e) {
+    console.error('Failed to load trends:', e);
+  }
+}
+
+// ═══════════════════════════════════════════
+//  METRICS
+// ═══════════════════════════════════════════
+function refreshMetrics() {
+  if (S.socket) S.socket.emit('ping_metrics');
+}
+
+function renderMetrics(m) {
+  document.getElementById('sysC').textContent = `${m.cpu}% | ${m.cpu_threads}T`;
+  document.getElementById('sysR').textContent = `${m.ram_used_gb}/${m.ram_total_gb}GB (${m.ram_pct}%)`;
+  document.getElementById('sysD').textContent = `${m.disk_used_gb}/${m.disk_total_gb}GB (${m.disk_pct}%)`;
+  document.getElementById('sysW').textContent = m.wsl2 ? '✅ Yes' : '❌ No';
+  document.getElementById('sysCU').textContent = m.comfyui ? '✅ Connected' : '❌ Not found';
+
+  const g = m.gpu || {};
+  document.getElementById('sysG').textContent = g.available ? `${g.name} ${g.util}%` : 'N/A';
+  document.getElementById('sysV').textContent = g.available ? `${g.mem_used}/${g.mem_total}MB` : 'N/A';
+  document.getElementById('sysT').textContent = g.available ? `${g.temp}°C` : 'N/A';
+  document.getElementById('sysP').textContent = g.available ? `${g.power}W` : 'N/A';
+
+  gpu_name = g.name || '-';
+
+  // Update progress GPU info if active
+  document.getElementById('pgGpuName').textContent = g.name || '-';
+  document.getElementById('pgVram').textContent = g.available ? `${g.mem_used}/${g.mem_total}MB` : '-';
+  document.getElementById('pgTemp').textContent = g.available ? `${g.temp}°C` : '-';
+}
+
+// ═══════════════════════════════════════════
+//  MODELS
+// ═══════════════════════════════════════════
+async function refreshModels() {
+  try {
+    const data = await fetch('/api/ollama/models').then(r => r.json());
+    const sel = document.getElementById('modelSelect');
+    sel.innerHTML = '';
+    (data.models || []).forEach(m => {
+      const sz = m.size ? `(${(m.size / 1e9).toFixed(1)}GB)` : '';
+      sel.innerHTML += `<option value="${m.name}" ${m.name === data.current ? 'selected' : ''}>${m.name} ${sz}</option>`;
+    });
+    if (!data.models?.length) {
+      sel.innerHTML = '<option>모델 없음</option>';
+    }
+    document.getElementById('modelInfo').textContent =
+      data.available ? `Ollama 연결됨 | 현재: ${data.current}` : 'Ollama 미연결';
+    setDot('dotOllama', data.available);
+  } catch (e) {
+    console.error('Model refresh failed:', e);
+  }
+}
+
+async function switchModel() {
+  const model = document.getElementById('modelSelect').value;
+  try {
+    await fetch('/api/ollama/switch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model }),
+    });
+    document.getElementById('modelInfo').textContent = `모델 변경: ${model}`;
+  } catch (e) {
+    console.error('Model switch failed:', e);
+  }
+}
+
+// ═══════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════
+function openSettings() {
+  document.getElementById('settingsModal').classList.add('active');
+  refreshModels();
+  checkComfyUI();
+}
+
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('active');
+}
+
+function saveSettings() {
+  const settings = {
+    username: document.getElementById('setUsername').value,
+    avatar: document.getElementById('setAvatar').value,
+    defaultPreset: document.getElementById('setDefaultPreset')?.value,
+    defaultVoice: document.getElementById('setDefaultVoice')?.value,
+    defaultQuality: document.getElementById('setDefaultQuality').value,
+  };
+  localStorage.setItem('shorts_settings', JSON.stringify(settings));
+  alert('설정이 저장되었습니다.');
+}
+
+function saveSocialSettings() {
+  const social = {
+    youtube_api_key: document.getElementById('setYtApiKey').value,
+    youtube_oauth: document.getElementById('setYtOauth').value,
+    instagram_token: document.getElementById('setIgToken').value,
+    x_token: document.getElementById('setXToken').value,
+    tiktok_token: document.getElementById('setTikToken').value,
+  };
+  localStorage.setItem('shorts_social', JSON.stringify(social));
+  alert('소셜 미디어 설정이 저장되었습니다.');
+}
+
+function loadSettings() {
+  try {
+    const settings = JSON.parse(localStorage.getItem('shorts_settings') || '{}');
+    if (settings.username) document.getElementById('setUsername').value = settings.username;
+    if (settings.avatar) document.getElementById('setAvatar').value = settings.avatar;
+
+    const social = JSON.parse(localStorage.getItem('shorts_social') || '{}');
+    if (social.youtube_api_key) document.getElementById('setYtApiKey').value = social.youtube_api_key;
+    if (social.youtube_oauth) document.getElementById('setYtOauth').value = social.youtube_oauth;
+    if (social.instagram_token) document.getElementById('setIgToken').value = social.instagram_token;
+    if (social.x_token) document.getElementById('setXToken').value = social.x_token;
+    if (social.tiktok_token) document.getElementById('setTikToken').value = social.tiktok_token;
+  } catch (e) {}
+}
+
+async function checkComfyUI() {
+  const el = document.getElementById('comfyStatus');
+  el.innerHTML = '<span class="spinner"></span> 확인 중...';
+  try {
+    const data = await fetch('/api/comfyui/status').then(r => r.json());
+    if (data.available) {
+      const vramGB = data.vram_free ? (data.vram_free / 1073741824).toFixed(1) : '?';
+      const vramTotalGB = data.vram_total ? (data.vram_total / 1073741824).toFixed(1) : '?';
+      const ckptCount = data.checkpoint_count || 0;
+      const ckptList = (data.checkpoints || []).map(c => `<div style="padding:1px 0;color:var(--accent)">• ${c}</div>`).join('');
+      const ckptSection = ckptCount > 0
+        ? `<div style="margin-top:4px"><b>체크포인트 (${ckptCount}개):</b>${ckptList}</div>`
+        : '<div style="margin-top:4px;color:var(--red)">⚠️ 체크포인트 없음! models/checkpoints/ 폴더에 모델을 넣어주세요</div>';
+      el.innerHTML = `
+        <span class="text-green">✅ 연결됨</span>
+        <div style="font-size:10px;margin-top:4px;padding:6px;background:var(--deep);border-radius:4px">
+          VRAM: ${vramGB}GB / ${vramTotalGB}GB | 로드된 모델: ${data.models_loaded || 0}
+          ${ckptSection}
+        </div>
+      `;
+      setDot('dotComfy', true);
+    } else {
+      el.innerHTML = '<span class="text-red">❌ 연결 안됨</span> — ComfyUI를 먼저 실행하세요';
+      setDot('dotComfy', false);
+    }
+  } catch (e) {
+    el.innerHTML = '<span class="text-red">❌ 연결 실패</span>';
+    setDot('dotComfy', false);
+  }
+}
+
+// ═══════════════════════════════════════════
+//  COMFYUI LOG CONSOLE
+// ═══════════════════════════════════════════
+function appendComfyLog(entry) {
+  const console = document.getElementById('comfyLogConsole');
+  if (!console) return;
+
+  const colorMap = {
+    ERROR: 'var(--red)', WARN: 'var(--yellow)',
+    SUCCESS: 'var(--green)', INFO: 'var(--text2)',
+  };
+  const color = colorMap[entry.level] || 'var(--text2)';
+  const line = document.createElement('div');
+  line.className = 'comfy-log-line';
+  line.style.color = color;
+  line.textContent = `[${entry.time}] ${entry.message}`;
+  console.appendChild(line);
+
+  // Keep max 200 lines
+  while (console.children.length > 200) {
+    console.removeChild(console.firstChild);
+  }
+  console.scrollTop = console.scrollHeight;
+}
+
+function clearComfyLogs() {
+  const console = document.getElementById('comfyLogConsole');
+  console.innerHTML = '<div class="comfy-log-line" style="color:var(--text3)">로그 초기화됨</div>';
+}
+
+async function fetchComfyLogs() {
+  try {
+    const data = await fetch('/api/comfyui/logs?lines=50').then(r => r.json());
+    const console = document.getElementById('comfyLogConsole');
+    console.innerHTML = '';
+    (data.logs || []).forEach(entry => appendComfyLog(entry));
+    if (!data.logs || data.logs.length === 0) {
+      console.innerHTML = '<div class="comfy-log-line" style="color:var(--text3)">로그 없음</div>';
+    }
+  } catch (e) {
+    console.error('Failed to fetch ComfyUI logs:', e);
+  }
+}
+
+// ═══════════════════════════════════════════
+//  ACTIVE JOB PANEL (Right sidebar)
+// ═══════════════════════════════════════════
+function updateActiveJobPanel(data) {
+  const body = document.getElementById('activeJobsBody');
+  const tag = document.getElementById('jobStatusTag');
+  if (!body) return;
+
+  const pct = data.progress || 0;
+  const step = data.step || data.current_step || data.message || '처리 중...';
+  const status = data.status || 'running';
+
+  if (status === 'running' || pct > 0) {
+    tag.style.display = 'inline';
+    tag.textContent = `${pct}%`;
+    tag.className = 'tag green';
+
+    body.innerHTML = `
+      <div style="font-size:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="color:var(--cyan)">${step}</span>
+          <span class="mono" style="color:var(--green)">${pct}%</span>
+        </div>
+        <div style="height:4px;background:var(--deep);border-radius:2px;overflow:hidden;margin-bottom:6px">
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--cyan),var(--purple));transition:width .5s"></div>
+        </div>
+        <div id="activeJobScenes" style="max-height:120px;overflow-y:auto;font-size:9px;color:var(--text3)"></div>
+        <div id="activeJobEta" style="font-size:9px;color:var(--text2);margin-top:4px"></div>
+      </div>
+    `;
+  }
+}
+
+function resetActiveJobPanel() {
+  const body = document.getElementById('activeJobsBody');
+  const tag = document.getElementById('jobStatusTag');
+  if (body) body.innerHTML = '<div class="empty-state" style="padding:10px"><div class="es-icon">✨</div>대기 중</div>';
+  if (tag) tag.style.display = 'none';
+}
+
+async function checkUpdate() {
+  const el = document.getElementById('updateResult');
+  el.innerHTML = '<span class="spinner"></span> 확인 중...';
+  try {
+    const data = await fetch('/api/version').then(r => r.json());
+    el.innerHTML = `
+      <div style="padding:8px;background:var(--deep);border-radius:6px;font-size:10px">
+        현재: v${data.app_version}<br>
+        Python: ${data.python}<br>
+        GPU: ${data.gpu?.name || 'N/A'}<br>
+        ComfyUI: ${data.comfyui_available ? '✅' : '❌'}<br>
+        Ollama: ${data.ollama_available ? '✅' : '❌'}<br>
+        <br>
+        <span class="text-green">✅ 최신 버전입니다</span>
+      </div>
+    `;
+  } catch (e) {
+    el.innerHTML = '<span class="text-red">❌ 확인 실패</span>';
+  }
+}
+
+// ═══════════════════════════════════════════
+//  KEYBOARD
+// ═══════════════════════════════════════════
+function initKeyboard() {
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeSettings();
+    if (e.ctrlKey && e.key === 'Enter') {
+      const activeTab = document.querySelector('.nav-tab.active')?.dataset.tab;
+      if (activeTab === 'create') genScenarios();
+      else if (activeTab === 'legacy') startLegacy();
+    }
+  });
+}
+
+// ═══════════════════════════════════════════
+//  UTILITY
+// ═══════════════════════════════════════════
+function formatTimeAgo(iso) {
+  try {
+    const d = new Date(iso);
+    const diff = (Date.now() - d.getTime()) / 1000;
+    if (diff < 60) return '방금';
+    if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`;
+    return `${Math.floor(diff / 86400)}일 전`;
+  } catch { return ''; }
+}
+</script>
+</body>
+</html>
